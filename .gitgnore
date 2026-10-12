@@ -1,0 +1,6 @@
+models/
+data/raw/
+*.gguf
+secrets/
+.env
+.venv/
