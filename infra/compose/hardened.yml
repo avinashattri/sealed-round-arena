@@ -1,0 +1,238 @@
+name: sra-hardened
+
+x-zone: &x-zone
+  user: "10001:10001"
+  read_only: true
+  tmpfs:
+    - "/tmp:size=64M,noexec,nosuid,nodev"
+  cap_drop:
+    - ALL
+  security_opt:
+    - "no-new-privileges:true"
+  mem_limit: 512m
+  cpus: 1.0
+  pids_limit: 64
+  dns:
+    - 192.0.2.1
+  logging:
+    options:
+      max-size: "10m"
+      max-file: "3"
+  restart: "no"
+
+x-probe: &x-probe
+  <<: *x-zone
+  user: "0:0"
+  command: ["sleep", "infinity"]
+
+services:
+  broker:
+    <<: *x-zone
+    image: sra/broker:dev
+    container_name: sra-hardened-broker
+    environment:
+      - ZONE=broker
+      - PORT=8000
+    volumes:
+      - broker_sealed:/sealed
+      - ./loop/model/system_prompt_public.txt:/app/system_prompt_public.txt:ro
+    secrets:
+      - tokens
+      - token_admin
+      - svc_blue
+      - svc_oracle
+      - svc_audit
+      - model_canary
+    networks:
+      - red_net
+      - blue_net
+      - model_net
+      - audit_net
+      - referee_net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
+      interval: 3s
+      timeout: 2s
+      retries: 5
+      start_period: 2s
+
+  audit:
+    <<: *x-zone
+    image: sra/stub:dev
+    container_name: sra-hardened-audit
+    environment:
+      - STUB_NAME=audit
+      - PORT=7000
+    volumes:
+      - audit_data:/data
+    secrets:
+      - svc_audit
+      - audit_signing_key
+    networks:
+      - audit_net
+
+  oracle:
+    <<: *x-zone
+    image: sra/stub:dev
+    container_name: sra-hardened-oracle
+    environment:
+      - STUB_NAME=oracle
+      - PORT=7100
+    secrets:
+      - svc_oracle
+      - model_canary
+    networks:
+      - referee_net
+
+  blue:
+    <<: *x-zone
+    image: sra/stub:dev
+    container_name: sra-hardened-blue
+    environment:
+      - STUB_NAME=blue
+      - PORT=9000
+    secrets:
+      - svc_blue
+      - blue_canary
+    networks:
+      - blue_net
+
+  red:
+    <<: *x-zone
+    image: sra/stub:dev
+    container_name: sra-hardened-red
+    environment:
+      - STUB_NAME=red
+      - PORT=8001
+    secrets:
+      - token_red
+      - red_canary
+    networks:
+      - red_net
+    command: ["sleep", "infinity"]
+
+  model:
+    image: ghcr.io/ggml-org/llama.cpp:server
+    container_name: sra-hardened-model
+    runtime: ${MODEL_RUNTIME:-runc}
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - "no-new-privileges:true"
+    mem_limit: 3g
+    cpus: 3.0
+    pids_limit: 64
+    dns:
+      - 192.0.2.1
+    volumes:
+      - ./models:/models:ro
+    secrets:
+      - model_canary
+    networks:
+      - model_net
+    command: -m /models/qwen2.5-1.5b-instruct-q4_k_m.gguf --host 0.0.0.0 --port 8080 -c 2048 -t 3 -np 1
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8080/health || exit 1"]
+      interval: 3s
+      timeout: 2s
+      retries: 10
+      start_period: 5s
+
+  stubmodel:
+    profiles: ["stubmodel"]
+    <<: *x-zone
+    image: sra/stub:dev
+    container_name: sra-hardened-stubmodel
+    environment:
+      - STUB_NAME=stubmodel
+      - PORT=8080
+    networks:
+      - model_net
+
+  red_probe:
+    profiles: ["probe"]
+    <<: *x-probe
+    image: sra/probe:dev
+    container_name: sra-hardened-red-probe
+    secrets:
+      - red_canary
+    networks:
+      - red_net
+
+  blue_probe:
+    profiles: ["probe"]
+    <<: *x-probe
+    image: sra/probe:dev
+    container_name: sra-hardened-blue-probe
+    secrets:
+      - blue_canary
+    networks:
+      - blue_net
+
+  model_probe:
+    profiles: ["probe"]
+    <<: *x-probe
+    image: sra/probe:dev
+    container_name: sra-hardened-model-probe
+    secrets:
+      - model_canary
+    networks:
+      - model_net
+
+volumes:
+  broker_sealed:
+  audit_data:
+
+networks:
+  red_net:
+    driver: bridge
+    internal: true
+    driver_opts:
+      com.docker.network.bridge.name: br-sra-red
+  blue_net:
+    driver: bridge
+    internal: true
+    driver_opts:
+      com.docker.network.bridge.name: br-sra-blue
+  model_net:
+    driver: bridge
+    internal: true
+    driver_opts:
+      com.docker.network.bridge.name: br-sra-model
+  audit_net:
+    driver: bridge
+    internal: true
+    driver_opts:
+      com.docker.network.bridge.name: br-sra-audit
+  referee_net:
+    driver: bridge
+    internal: true
+    driver_opts:
+      com.docker.network.bridge.name: br-sra-referee
+
+secrets:
+  tokens:
+    file: ./secrets/tokens.json
+  token_admin:
+    file: ./secrets/token_admin.txt
+  token_red:
+    file: ./secrets/token_red.txt
+  svc_blue:
+    file: ./secrets/token_svc_blue.txt
+  svc_oracle:
+    file: ./secrets/token_svc_oracle.txt
+  svc_audit:
+    file: ./secrets/token_svc_audit.txt
+  audit_signing_key:
+    file: ./secrets/audit_signing_key.txt
+  model_canary:
+    file: ./secrets/model_canary.txt
+  red_canary:
+    file: ./secrets/red_canary.txt
+  blue_canary:
+    file: ./secrets/blue_canary.txt
+  red_attacks:
+    file: ./secrets/red_attacks.json
+  red_meta:
+    file: ./secrets/red_meta.json

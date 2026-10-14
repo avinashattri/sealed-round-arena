@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 BRIDGES=(br-sra-red br-sra-blue br-sra-model br-sra-audit br-sra-referee)
 
 del()    { sudo iptables -D DOCKER-USER "$@" 2>/dev/null || true; }
@@ -11,3 +12,6 @@ for b in "${BRIDGES[@]}"; do
   del -o "$b" ! -i "$b" -j DROP
   del_in -i "$b" -j DROP
 done
+
+rm -f "$REPO_ROOT/evidence/.fw_boot_id"
+echo "Firewall rules removed."

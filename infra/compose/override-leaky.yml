@@ -1,0 +1,4 @@
+name: sra-hardened
+networks:
+  red_net:
+    internal: false

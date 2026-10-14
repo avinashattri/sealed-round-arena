@@ -26,3 +26,19 @@ clean: ## Tear down all containers, volumes, and repo-local secrets/shared dirs
 > docker compose --project-directory . -f infra/compose/hardened.yml down -v --remove-orphans >/dev/null 2>&1 || true
 > rm -rf secrets shared
 > @echo "Clean complete: stopped containers, removed volumes, removed secrets/ and shared/."
+
+.PHONY: hardened
+hardened: ## Start hardened compose environment
+> bash infra/scripts/up.sh hardened
+
+.PHONY: hardened-down
+hardened-down: ## Stop hardened compose environment
+> bash infra/scripts/down.sh hardened
+
+.PHONY: fw-on
+fw-on: ## Apply firewall backstop rules (sudo)
+> bash infra/firewall/apply.sh
+
+.PHONY: fw-off
+fw-off: ## Remove firewall backstop rules (sudo)
+> bash infra/firewall/remove.sh
