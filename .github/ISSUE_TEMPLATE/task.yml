@@ -1,0 +1,31 @@
+name: Task
+description: A piece of work from the plan
+labels: ["tier:core"]
+body:
+  - type: input
+    id: phase
+    attributes:
+      label: Phase
+      placeholder: "Phase 2"
+  - type: input
+    id: estimate
+    attributes:
+      label: Estimate (hours)
+  - type: textarea
+    id: what
+    attributes:
+      label: What to build
+      description: Files and commands
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      description: A check someone else can run
+    validations:
+      required: true
+  - type: textarea
+    id: risk
+    attributes:
+      label: Likeliest error and fallback

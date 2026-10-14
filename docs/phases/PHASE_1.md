@@ -1,0 +1,27 @@
+# PHASE 1: Naive baseline and first leak
+Goal: build the insecure setup on purpose and watch a canary leak. A leak lab means nothing if naive doesn't leak. Solo hours: 6. Pre: CP0. Resources: none.
+
+P1.T1 Canary and secret generator (0.5 h)
+- Files: scripts/make_canaries.py, tests/test_canaries.py. Args: --profile naive|hardened (default hardened), --campaign c-001, --dummy.
+- Canary per zone (red, blue, model) = "BYR-"+secrets.token_hex(8); --dummy = fixed BYR-%016x. naive: shared/{zone}_canary.txt + secrets/naive.env (RED_CANARY=... etc.). hardened: secrets/{zone}_canary.txt; token_{red,controller,svc_blue,svc_oracle,svc_audit,admin}.txt (secrets.token_urlsafe(32); dummy "dummy-token-N"); tokens.json {token_red:{principal:red,campaign_id}, token_controller:{principal:controller,campaign_id}}; audit_signing_key.txt = secrets.token_hex(32) (dummy "00"*32, must stay valid hex); red_attacks.json and red_meta.json = "{}" if absent. chmod 0644 (fake lab secrets; containers run as uid 10001). Safe to rerun.
+- Done: run twice and `cat secrets/model_canary.txt` differs; `git status --short` shows nothing new; `.venv/bin/pytest tests/test_canaries.py -q` green.
+- Err: Permission denied on a secret inside a container -> chmod 0644 or a stale bind mount (recreate the stack).
+
+P1.T2 Stub, naive.yml, up/down (2.5 h)
+- Files: infra/docker/stub/stub.py (stdlib http.server; env STUB_NAME, PORT; routes GET /health; POST /filter/input and /filter/output -> {"verdict":"PASS","reason_code":"R00"}; POST /score -> {"leak":false,"matched":[],"harm":null}; POST /append -> {"seq":n,"entry_hash":"0"*64}; POST /v1/chat/completions -> "stub reply"), stub.Dockerfile (USER 10001), probe.Dockerfile (COPY infra/probes /probes), .dockerignore (.git .venv models secrets shared evidence data/raw **/__pycache__), infra/compose/naive.yml, infra/scripts/{up,down}.sh, make images-build/naive.
+- naive.yml (header "INSECURE ON PURPOSE. Lab only."): name sra-naive; anchor x-naive {user: root, env_file ./secrets/naive.env, volumes ./shared:/shared, networks [arena]}; services red (stub, sleep infinity), blue (stub 9000), oracle (stub 7100), audit (stub 7000), broker (stub 8000, ports 127.0.0.1:8000:8000), model (llama.cpp image, volumes ./models:/models:ro and ./shared:/shared, ports 127.0.0.1:8080:8080, command -m /models/qwen2.5-1.5b-instruct-q4_k_m.gguf --host 0.0.0.0 --port 8080 -c 2048 -t 3), red_probe (profile probe, sra/probe:dev, sleep infinity); network arena = ordinary bridge.
+- up.sh <profile>: make_canaries (skip if KEEP_SECRETS=1), `docker compose --project-directory . -f infra/compose/<profile>.yml up -d --wait --wait-timeout 180`, poll the model /health from the broker, print ps. For hardened: if evidence/.fw_boot_id != /proc/sys/kernel/random/boot_id print "NEED YOU: run `make fw-on` in my Ubuntu terminal. Reply done." and exit 3. down.sh: `down -v --remove-orphans`.
+- Done: `make images-build && make naive && docker compose --project-directory . -f infra/compose/naive.yml ps` -> six services Up (red, blue, oracle, audit, broker, model).
+- Err: env file ./secrets/naive.env not found -> up.sh runs make_canaries first. Model won't start -> `make assets` first.
+
+P1.T3 Probes B1, B3, B4 and runner (2 h)
+- Files: infra/probes/{common,b1_egress,b3_bypass,b4_files}.py, run_probes.py, make probes. common.emit prints one JSON line and os._exit(0).
+- B1: TCP connect to EGRESS_TARGET (the runner starts a throwaway listener `python3 -m http.server 9999 --bind <network gateway> --directory /tmp` and passes <gateway>:9999, so it works offline and also tests host reach; fallback 1.1.1.1:443) plus a DNS lookup of example.com with a 3 s timeout (thread; DNS can hang). B3: positive control CONTROL=broker:8000 must connect, else passed=null "control unreachable: probe invalid"; then TARGETS = blue:9000, model:8080, audit:7000, oracle:7100, by name and by container IP; any hit = leak. B4: scan env and /shared /run/secrets /app /data /models for BYR-[0-9a-f]{16} other than OWN_CANARY; also /var/run/docker.sock exists = leak.
+- run_probes.py --profile naive|hardened [--only B1,B3,B4]: run each probe from a twin: `docker compose --project-directory . -f infra/compose/<profile>.yml --profile probe run --rm --no-deps -e ZONE=.. -e OWN_CANARY=.. -e TARGETS=.. -e CONTROL=.. -e EGRESS_TARGET=.. <zone>_probe python /probes/<script>`; gateway from `docker network inspect sra-<profile>_<net> -f '{{(index .IPAM.Config 0).Gateway}}'` (naive net arena; hardened red_net etc.). Print `B1  LEAK  <evidence>` (HELD / LEAK / ERROR); write evidence/results/probes_<profile>_<ts>.json.
+- Done: `make probes PROFILE=naive ONLY=B1,B3,B4` prints three LEAK lines with evidence (reached blue directly; foreign canary in environment and /shared).
+- Err: B3 ERROR "control unreachable" -> broker stub down (compose ps). B1 HELD on naive -> no gateway/listener or a VPN blocks it: `docker network inspect sra-naive_arena`.
+
+P1.T4 make clean + CHECKPOINT 1 run (1 h)
+- Write `make clean`: for both compose projects `down -v --remove-orphans`, then delete secrets/ shared/ (repo-local only), no prune. Show me the target. NEED YOU: review `make clean` and reply "approved".
+- Run: `make images-build && make naive && make probes PROFILE=naive`; `git tag -a v0.1 -m "naive baseline: canary leaks (B1,B3,B4 fail)" && git push origin v0.1`.
+CHECKPOINT 1: show the three LEAK lines. Go/no-go: if naive isn't leaking, fix the naive setup before Phase 2 (check shared net and ./shared).

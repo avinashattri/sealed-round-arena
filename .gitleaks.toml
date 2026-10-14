@@ -1,0 +1,7 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Fake canaries and the committed replay bundle"
+regexes = ['''BYR-[0-9a-f]{16}''']
+paths = ['''replay/''']
