@@ -20,11 +20,23 @@ P0.T3 Contracts (1.5 h)
 ```python
 # contracts/canonical.py
 import hashlib, json
+
 GENESIS = "0" * 64
+
+
 def canonical_json(obj) -> bytes:
-    return json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-def sha256_hex(b: bytes) -> str: return hashlib.sha256(b).hexdigest()
-def entry_hash(prev_hash: str, fields: dict) -> str:   # fields = every entry field except entry_hash and sig (prev_hash included)
+    return json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode(
+        "utf-8"
+    )
+
+
+def sha256_hex(b: bytes) -> str:
+    return hashlib.sha256(b).hexdigest()
+
+
+def entry_hash(
+    prev_hash: str, fields: dict
+) -> str:  # fields = every entry field except entry_hash and sig (prev_hash included)
     return sha256_hex(bytes.fromhex(prev_hash) + canonical_json(fields))
 ```
 - Tests (6): extra field in Submit raises; 4001-char payload raises; canonical_json is key-order independent; policy lookup for an unlisted principal is False; can_move(SEALED, CLOSED) is False; golden hash: compute entry_hash(GENESIS, {"a": 1}) once, paste it into the test, assert forever.

@@ -103,14 +103,14 @@ IDs: campaign ^c-[0-9]{3}$, round ^r-[0-9]{3}$, challenge ^ch-[0-9]{4}$. Verdict
 
 ## 9 Organiser resources (open every link in P0.T6; fill every "?" with verified facts)
 | Resource | Size | License | Access gate | Download by script | Verdict | Plugs in |
-| AdvBench github.com/llm-attacks/llm-attacks | ? | ? | ? | ? | SKIP core-lite; extra: categories only | optional E6 |
-| JailbreakBench jailbreakbench.github.io | ? | ? | ? | ? | USE extra: benign behaviours only | P4.T2 benign set + hard negatives |
-| HarmBench harmbench.org | ? | ? | ? | ? | SKIP unless its classifier runs on CPU in 16 GB | optional harm judge |
-| ToxiGen github.com/microsoft/ToxiGen | ? | ? | ? | ? | SKIP / extra benign text if ungated | P4.T2 extra |
-| Gandalf huggingface.co/datasets/Lakera/gandalf_ignore_instructions | guess 777/111/112 rows | guess MIT | ? | datasets.load_dataset | USE core-lite | P0.T5 fetch; P4.T3 seeds/variants; P4.T4 Blue patterns |
-| NVD nvd.nist.gov/vuln/search | n/a | public | rate limits | none (read-only) | USE: interpret scan findings | P6 THREAT_MODEL supply-chain row |
-| DARPA TC github.com/darpa-i2o/Transparent-Computing | huge | ? | ? | none | IDEAS only | parent field in audit; THREAT_MODEL note |
-| Anthropic HH-RLHF huggingface.co/datasets/Anthropic/hh-rlhf | ? | recheck | ? | ? | SKIP core-lite; benign prompts extra only; red-team transcripts stay unused | P4.T2 extra |
+| AdvBench github.com/llm-attacks/llm-attacks | 2.4 MB (csv: 35 KB) | MIT | Public / None | curl raw CSV | SKIP core-lite; extra: categories only | optional E6 |
+| JailbreakBench jailbreakbench.github.io | 1 MB (csv: 15 KB) | MIT | Public / None | curl raw CSV | USE extra: benign behaviours only | P4.T2 benign set + hard negatives |
+| HarmBench harmbench.org | ~500 MB | MIT | Public / None | git clone / load_dataset | SKIP unless its classifier runs on CPU in 16 GB | optional harm judge |
+| ToxiGen github.com/microsoft/ToxiGen | ~135 MB (subset ~2 MB) | MSR-LA/MIT | Public / None | load_dataset("skg/toxigen-data") | SKIP / extra benign text if ungated | P4.T2 extra |
+| Gandalf huggingface.co/datasets/Lakera/gandalf_ignore_instructions | 150 KB (777 train / 111 val / 112 test) | MIT | Public / None | load_dataset("Lakera/gandalf_ignore_instructions") | USE core-lite | P0.T5 fetch; P4.T3 seeds/variants; P4.T4 Blue patterns |
+| NVD nvd.nist.gov/vuln/search | n/a | Public Domain | Rate limits | none (read-only) | USE: interpret scan findings | P6 THREAT_MODEL supply-chain row |
+| DARPA TC github.com/darpa-i2o/Transparent-Computing | ~100 GB | Public Domain / BSD | Public GitHub repo | none (too large) | IDEAS only | parent field in audit; THREAT_MODEL note |
+| Anthropic HH-RLHF huggingface.co/datasets/Anthropic/hh-rlhf | ~130 MB (161k train / 8.5k test) | MIT | Public / None | load_dataset("Anthropic/hh-rlhf") | SKIP core-lite; benign prompts extra only; red-team transcripts stay unused | P4.T2 extra |
 
 ## 10 Rubric map (each needs a deliverable and a proof command)
 Verticals: 1 Container isolation: hardened x-zone settings + B5 -> `make probes PROFILE=hardened ONLY=B5`. 2 Network segmentation: 5 internal nets + firewall -> `make probes PROFILE=hardened ONLY=B1,B3` and `bash infra/firewall/negative_test.sh`. 3 Access control/secrets: policy matrix + per-campaign tokens + file secrets -> `.venv/bin/pytest referee/broker -q` and B4. 4 Audit/provenance: signed chain -> `make verify && make tamper-demo`. 5 Resource governance: cgroup limits + B7 + latency -> `make probes PROFILE=hardened ONLY=B7`, `make report`. 6 LLM-specific: C3, C4, cache off, tool allowlist, oracle -> `make probes PROFILE=hardened ONLY=C3,C4`, `.venv/bin/pytest loop/oracle -q`. 7 Observability: O1 flags (E5) -> `.venv/bin/python -m loop.scoring.anomalies`, else "not built".

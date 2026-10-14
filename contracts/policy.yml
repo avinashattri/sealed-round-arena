@@ -1,0 +1,21 @@
+version: 1
+default: deny
+rules:
+  - principal: red
+    action: submit
+    resource: /submit
+  - principal: controller
+    action: submit
+    resource: /submit
+  - principal: broker
+    action: append
+    resource: audit
+  - principal: controller
+    action: checkpoint
+    resource: audit
+  - principal: controller
+    action: export
+    resource: audit
+  - principal: model
+    action: tool_call
+    resource: mock_lookup
