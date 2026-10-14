@@ -1,0 +1,8 @@
+.git
+.venv
+models
+secrets
+shared
+evidence
+data/raw
+**/__pycache__

@@ -9,9 +9,9 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from nacl.signing import SigningKey  # noqa: E402
+from nacl.signing import SigningKey
 
-from contracts.canonical import GENESIS, canonical_json, entry_hash  # noqa: E402
+from contracts.canonical import GENESIS, canonical_json, entry_hash
 
 
 def main():

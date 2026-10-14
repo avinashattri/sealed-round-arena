@@ -1,0 +1,87 @@
+# INSECURE ON PURPOSE. Lab only.
+name: sra-naive
+
+x-naive: &x-naive
+  user: root
+  env_file:
+    - ./secrets/naive.env
+  volumes:
+    - ./shared:/shared
+  networks:
+    - arena
+
+services:
+  red:
+    <<: *x-naive
+    image: sra/stub:dev
+    container_name: sra-naive-red
+    environment:
+      - STUB_NAME=red
+      - PORT=8001
+    command: ["sleep", "infinity"]
+
+  blue:
+    <<: *x-naive
+    image: sra/stub:dev
+    container_name: sra-naive-blue
+    environment:
+      - STUB_NAME=blue
+      - PORT=9000
+
+  oracle:
+    <<: *x-naive
+    image: sra/stub:dev
+    container_name: sra-naive-oracle
+    environment:
+      - STUB_NAME=oracle
+      - PORT=7100
+
+  audit:
+    <<: *x-naive
+    image: sra/stub:dev
+    container_name: sra-naive-audit
+    environment:
+      - STUB_NAME=audit
+      - PORT=7000
+
+  broker:
+    <<: *x-naive
+    image: sra/stub:dev
+    container_name: sra-naive-broker
+    environment:
+      - STUB_NAME=broker
+      - PORT=8000
+    ports:
+      - "127.0.0.1:8000:8000"
+
+  model:
+    image: ghcr.io/ggml-org/llama.cpp:server
+    container_name: sra-naive-model
+    user: root
+    env_file:
+      - ./secrets/naive.env
+    volumes:
+      - ./models:/models:ro
+      - ./shared:/shared
+    networks:
+      - arena
+    ports:
+      - "127.0.0.1:8080:8080"
+    command: -m /models/qwen2.5-1.5b-instruct-q4_k_m.gguf --host 0.0.0.0 --port 8080 -c 2048 -t 3
+
+  red_probe:
+    profiles: ["probe"]
+    image: sra/probe:dev
+    container_name: sra-naive-red-probe
+    user: root
+    env_file:
+      - ./secrets/naive.env
+    volumes:
+      - ./shared:/shared
+    networks:
+      - arena
+    command: ["sleep", "infinity"]
+
+networks:
+  arena:
+    driver: bridge
