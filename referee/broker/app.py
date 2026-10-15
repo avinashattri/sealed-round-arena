@@ -10,9 +10,15 @@ from pydantic import ValidationError
 from contracts.messages import Receipt, Submit
 from contracts.policy import check_policy
 from contracts.rounds import RoundState
-from referee.broker.admin import get_admin_token
-from referee.broker.flow import execute_submit_flow
-from referee.broker.state import manager
+
+try:
+    from referee.broker.admin import get_admin_token
+    from referee.broker.flow import execute_submit_flow
+    from referee.broker.state import manager
+except ModuleNotFoundError:
+    from broker.admin import get_admin_token
+    from broker.flow import execute_submit_flow
+    from broker.state import manager
 
 app = FastAPI(title="Sealed Round Arena - Broker")
 

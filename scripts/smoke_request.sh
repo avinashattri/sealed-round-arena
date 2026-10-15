@@ -6,13 +6,13 @@ echo "=== Smoke Request Test ==="
 # 1. State transitions via broker admin
 echo "Transitioning broker state to EXECUTING..."
 docker compose --project-directory . -f infra/compose/hardened.yml exec -T broker \
-  python -m referee.broker.admin move COMMITTED >/dev/null
+  python -m broker.admin move COMMITTED >/dev/null
 
 docker compose --project-directory . -f infra/compose/hardened.yml exec -T broker \
-  python -m referee.broker.admin move SEALED >/dev/null
+  python -m broker.admin move SEALED >/dev/null
 
 docker compose --project-directory . -f infra/compose/hardened.yml exec -T broker \
-  python -m referee.broker.admin move EXECUTING >/dev/null
+  python -m broker.admin move EXECUTING >/dev/null
 
 TOKEN_RED="$(cat secrets/token_red.txt 2>/dev/null || cat /run/secrets/token_red 2>/dev/null || echo '')"
 

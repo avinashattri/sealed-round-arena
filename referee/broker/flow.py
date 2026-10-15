@@ -13,14 +13,25 @@ from contracts.messages import (
 )
 from contracts.policy import check_policy
 from contracts.prompt import build_system_prompt
-from referee.broker.clients import (
-    call_audit,
-    call_blue_filter,
-    call_model,
-    call_oracle,
-    read_secret,
-)
-from referee.broker.state import manager
+
+try:
+    from referee.broker.clients import (
+        call_audit,
+        call_blue_filter,
+        call_model,
+        call_oracle,
+        read_secret,
+    )
+    from referee.broker.state import manager
+except ModuleNotFoundError:
+    from broker.clients import (
+        call_audit,
+        call_blue_filter,
+        call_model,
+        call_oracle,
+        read_secret,
+    )
+    from broker.state import manager
 
 PUBLIC_PROMPT_PATH = Path(os.environ.get("PUBLIC_PROMPT_PATH", "/app/system_prompt_public.txt"))
 

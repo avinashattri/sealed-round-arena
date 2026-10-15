@@ -82,6 +82,19 @@ services:
       - arena
     command: ["sleep", "infinity"]
 
+  blue_probe:
+    profiles: ["probe"]
+    image: sra/probe:dev
+    container_name: sra-naive-blue-probe
+    user: root
+    env_file:
+      - ./secrets/naive.env
+    volumes:
+      - ./shared:/shared
+    networks:
+      - arena
+    command: ["sleep", "infinity"]
+
 networks:
   arena:
     driver: bridge

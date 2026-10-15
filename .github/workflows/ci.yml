@@ -33,6 +33,21 @@ jobs:
       - name: Run Ruff
         run: |
           ruff check .
-      - name: Run Contracts Tests
+      - name: Run Tests
         run: |
-          pytest contracts -q
+          pytest contracts referee/broker tests -q
+
+  compose:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate Compose Configs
+        run: |
+          cp .env.example .env
+          python3 scripts/make_canaries.py --dummy --profile naive
+          python3 scripts/make_canaries.py --dummy --profile hardened
+          docker compose --project-directory . -f infra/compose/naive.yml config -q
+          docker compose --project-directory . -f infra/compose/hardened.yml config -q
