@@ -7,6 +7,7 @@ from typing import Any
 from fastapi import FastAPI, Header, HTTPException, Request, Response
 from pydantic import ValidationError
 
+from contracts.audit import AuditIn
 from contracts.messages import Receipt, Submit
 from contracts.policy import check_policy
 from contracts.rounds import RoundState
@@ -145,5 +146,40 @@ async def admin_load_round(request: Request, authorization: str | None = Header(
         round_id=body.get("round_id", "r-001"),
         defense_digest=body.get("defense_digest"),
         model_digest=body.get("model_digest"),
+        pub=body.get("pub"),
+        temperature=body.get("temperature"),
+        seed_base=body.get("seed_base"),
     )
     return manager.get_info()
+
+
+@app.post("/admin/audit")
+async def admin_audit(request: Request, authorization: str | None = Header(None)):
+    """Controller writes events through the broker (broker is the only audit writer)."""
+    verify_admin(request, authorization)
+    try:
+        body = await request.json()
+        audit_in = AuditIn.model_validate(body)
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=f"Invalid audit schema: {e}")
+    try:
+        from referee.broker.flow import call_audit as _call_audit
+    except ModuleNotFoundError:
+        from broker.flow import call_audit as _call_audit
+    # call_audit is async so we need to await it
+    result = await _call_audit(audit_in)
+    return result
+
+
+@app.post("/admin/submit", response_model=Receipt)
+async def admin_submit(request: Request, authorization: str | None = Header(None)):
+    """Controller benign stream: submit as controller principal (STAND-IN if stand_in_red)."""
+    verify_admin(request, authorization)
+    try:
+        body = await request.json()
+        req = Submit.model_validate(body)
+    except ValidationError:
+        raise HTTPException(status_code=422, detail="Unprocessable Entity")
+    if manager.state != RoundState.EXECUTING:
+        raise HTTPException(status_code=409, detail="Conflict: Round not in EXECUTING state")
+    return await execute_submit_flow(req)

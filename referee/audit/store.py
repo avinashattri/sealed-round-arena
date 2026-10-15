@@ -1,7 +1,7 @@
 import os
 import sqlite3
 import threading
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -113,7 +113,7 @@ class AuditStore:
         with self._lock:
             count, prev_hash, _ = self.head()
             next_seq = count + 1
-            ts = datetime.now(timezone.utc).isoformat()
+            ts = datetime.now(UTC).isoformat()
 
             entry_dict = {
                 **fields,

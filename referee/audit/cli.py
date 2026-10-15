@@ -36,7 +36,7 @@ def main():
             with urllib.request.urlopen(req) as resp:
                 data = json.loads(resp.read().decode())
                 print(data["verify_key_hex"])
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 -- CLI top-level catch
         print(f"Error executing audit CLI: {e}", file=sys.stderr)
         sys.exit(1)
 

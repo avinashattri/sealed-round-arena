@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 from contracts.audit import Actor, AuditIn, Event
+from contracts.crypto.seal import seal as seal_content
 from contracts.messages import (
     FilterRequest,
     GatewayDecision,
@@ -35,6 +36,8 @@ except ModuleNotFoundError:
 
 PUBLIC_PROMPT_PATH = Path(os.environ.get("PUBLIC_PROMPT_PATH", "/app/system_prompt_public.txt"))
 
+_event_counters: dict[tuple[str, str], int] = {}
+
 
 def get_model_canary() -> str:
     return read_secret("MODEL_CANARY", "/run/secrets/model_canary", "secrets/model_canary.txt")
@@ -49,37 +52,73 @@ def get_public_prompt() -> str:
     return "You are a helpful assistant."
 
 
-async def execute_submit_flow(req: Submit) -> Receipt:
-    campaign_id = manager.campaign_id
+async def audit(
+    event: Event | str,
+    cid: str | None = None,
+    content: str | bytes | None = None,
+    actor: Actor | str = Actor.BROKER,
+) -> None:
+    """flow.audit(event, cid, content=None, actor="broker"):
+    content_hash = sha256(content); content sealed with the round public key
+    to /sealed/<round>/<cid>.<event>.<n>.bin; sealed_ref set; failure raises.
+    """
     round_id = manager.round_id
+    campaign_id = manager.campaign_id
+
+    content_hash = None
+    sealed_ref = None
+
+    if content is not None:
+        if isinstance(content, str):
+            content_bytes = content.encode("utf-8")
+        else:
+            content_bytes = content
+        content_hash = hashlib.sha256(content_bytes).hexdigest()
+
+        if manager.round_pub_hex:
+            cid_str = cid or "none"
+            event_name = event.value if isinstance(event, Event) else str(event)
+            key = (cid_str, event_name)
+            _event_counters[key] = _event_counters.get(key, 0) + 1
+            n = _event_counters[key]
+
+            ciphertext = seal_content(manager.round_pub_hex, content_bytes)
+            sealed_base = Path(os.environ.get("SEALED_DIR", "/sealed"))
+            sealed_dir = sealed_base / round_id
+            sealed_dir.mkdir(parents=True, exist_ok=True)
+            fpath = sealed_dir / f"{cid_str}.{event_name}.{n}.bin"
+            fpath.write_bytes(ciphertext)
+            sealed_ref = str(fpath)
+
+    actor_val = Actor(actor) if isinstance(actor, str) else actor
+    event_val = Event(event) if isinstance(event, str) else event
+
+    entry = AuditIn(
+        campaign_id=campaign_id,
+        round_id=round_id,
+        challenge_id=cid,
+        actor=actor_val,
+        event=event_val,
+        content_hash=content_hash,
+        sealed_ref=sealed_ref,
+        defense_digest=manager.defense_digest,
+        model_digest=manager.model_digest,
+        policy_version=1,
+    )
+    await call_audit(entry)
+
+
+async def execute_submit_flow(req: Submit) -> Receipt:
     ch_id = req.challenge_id
 
-    req_hash = hashlib.sha256(req.payload.encode("utf-8")).hexdigest()
-
     # Step 1: Audit request_received & gateway_decision ALLOW
-    await call_audit(
-        AuditIn(
-            campaign_id=campaign_id,
-            round_id=round_id,
-            challenge_id=ch_id,
-            actor=Actor.BROKER,
-            event=Event.REQUEST_RECEIVED,
-            content_hash=req_hash,
-            defense_digest=manager.defense_digest,
-            model_digest=manager.model_digest,
-            policy_version=1,
-        )
-    )
+    await audit(Event.REQUEST_RECEIVED, ch_id, content=req.payload, actor=Actor.BROKER)
 
-    await call_audit(
-        AuditIn(
-            campaign_id=campaign_id,
-            round_id=round_id,
-            challenge_id=ch_id,
-            actor=Actor.BROKER,
-            event=Event.GATEWAY_DECISION,
-            content_hash=hashlib.sha256(GatewayDecision.ALLOW.encode()).hexdigest(),
-        )
+    await audit(
+        Event.GATEWAY_DECISION,
+        ch_id,
+        content=GatewayDecision.ALLOW.encode("utf-8"),
+        actor=Actor.BROKER,
     )
 
     # Step 2: Call blue filter on input
@@ -87,29 +126,19 @@ async def execute_submit_flow(req: Submit) -> Receipt:
         "/filter/input", FilterRequest(challenge_id=ch_id, text=req.payload)
     )
 
-    await call_audit(
-        AuditIn(
-            campaign_id=campaign_id,
-            round_id=round_id,
-            challenge_id=ch_id,
-            actor=Actor.BLUE,
-            event=Event.BLUE_INPUT_VERDICT,
-            content_hash=hashlib.sha256(
-                f"{in_verdict.verdict}:{in_verdict.reason_code}".encode()
-            ).hexdigest(),
-        )
+    await audit(
+        Event.BLUE_INPUT_VERDICT,
+        ch_id,
+        content=f"{in_verdict.verdict}:{in_verdict.reason_code}".encode(),
+        actor=Actor.BLUE,
     )
 
     if in_verdict.verdict == Verdict.FLAG:
-        await call_audit(
-            AuditIn(
-                campaign_id=campaign_id,
-                round_id=round_id,
-                challenge_id=ch_id,
-                actor=Actor.BROKER,
-                event=Event.GATEWAY_DECISION,
-                content_hash=hashlib.sha256(GatewayDecision.REVIEW.encode()).hexdigest(),
-            )
+        await audit(
+            Event.GATEWAY_DECISION,
+            ch_id,
+            content=GatewayDecision.REVIEW.encode("utf-8"),
+            actor=Actor.BROKER,
         )
 
     if in_verdict.verdict != Verdict.PASS:
@@ -126,11 +155,14 @@ async def execute_submit_flow(req: Submit) -> Receipt:
         {"role": "user", "content": req.payload},
     ]
 
+    submit_n = manager.next_submit_n()
+    cache_on = os.environ.get("MODEL_CACHE", "off").lower() in ("on", "true", "1")
     model_resp = await call_model(
         messages=messages,
-        temperature=0.0,
-        seed=1,
+        temperature=manager.temperature,
+        seed=manager.seed_base + submit_n,
         max_tokens=req.max_tokens,
+        cache_prompt=cache_on,
     )
 
     choice = model_resp.get("choices", [{}])[0]
@@ -144,31 +176,20 @@ async def execute_submit_flow(req: Submit) -> Receipt:
         tool_name = func.get("name", "")
         if not check_policy("model", "tool_call", tool_name):
             # Unauthorized tool call detected
-            await call_audit(
-                AuditIn(
-                    campaign_id=campaign_id,
-                    round_id=round_id,
-                    challenge_id=ch_id,
-                    actor=Actor.BROKER,
-                    event=Event.FINDING,
-                    content_hash=hashlib.sha256(
-                        f"disallowed_tool:{tool_name}".encode()
-                    ).hexdigest(),
-                )
+            await audit(
+                Event.FINDING,
+                ch_id,
+                content=f"disallowed_tool:{tool_name}".encode(),
+                actor=Actor.BROKER,
             )
             # Block unauthorized tool output
             return Receipt(challenge_id=ch_id, status="accepted")
 
-    resp_hash = hashlib.sha256(model_text.encode("utf-8")).hexdigest()
-    await call_audit(
-        AuditIn(
-            campaign_id=campaign_id,
-            round_id=round_id,
-            challenge_id=ch_id,
-            actor=Actor.MODEL,
-            event=Event.MODEL_RESPONSE,
-            content_hash=resp_hash,
-        )
+    await audit(
+        Event.MODEL_RESPONSE,
+        ch_id,
+        content=model_text.encode("utf-8"),
+        actor=Actor.MODEL,
     )
 
     # Step 5: Call blue filter on output
@@ -176,17 +197,11 @@ async def execute_submit_flow(req: Submit) -> Receipt:
         "/filter/output", FilterRequest(challenge_id=ch_id, text=model_text)
     )
 
-    await call_audit(
-        AuditIn(
-            campaign_id=campaign_id,
-            round_id=round_id,
-            challenge_id=ch_id,
-            actor=Actor.BLUE,
-            event=Event.BLUE_OUTPUT_VERDICT,
-            content_hash=hashlib.sha256(
-                f"{out_verdict.verdict}:{out_verdict.reason_code}".encode()
-            ).hexdigest(),
-        )
+    await audit(
+        Event.BLUE_OUTPUT_VERDICT,
+        ch_id,
+        content=f"{out_verdict.verdict}:{out_verdict.reason_code}".encode(),
+        actor=Actor.BLUE,
     )
 
     if out_verdict.verdict != Verdict.PASS:
@@ -195,31 +210,20 @@ async def execute_submit_flow(req: Submit) -> Receipt:
     # Step 6: Call oracle scoring
     oracle_res = await call_oracle(OracleRequest(challenge_id=ch_id, text=model_text))
 
-    oracle_hash = hashlib.sha256(
-        f"leak={oracle_res.leak}:matched={','.join(oracle_res.matched)}".encode()
-    ).hexdigest()
-
-    await call_audit(
-        AuditIn(
-            campaign_id=campaign_id,
-            round_id=round_id,
-            challenge_id=ch_id,
-            actor=Actor.ORACLE,
-            event=Event.ORACLE_SCORE,
-            content_hash=oracle_hash,
-        )
+    oracle_content = f"leak={oracle_res.leak}:matched={','.join(oracle_res.matched)}".encode()
+    await audit(
+        Event.ORACLE_SCORE,
+        ch_id,
+        content=oracle_content,
+        actor=Actor.ORACLE,
     )
 
     # Step 7: Audit delivered
-    await call_audit(
-        AuditIn(
-            campaign_id=campaign_id,
-            round_id=round_id,
-            challenge_id=ch_id,
-            actor=Actor.BROKER,
-            event=Event.DELIVERED,
-            content_hash=resp_hash,
-        )
+    await audit(
+        Event.DELIVERED,
+        ch_id,
+        content=model_text.encode("utf-8"),
+        actor=Actor.BROKER,
     )
 
     # Red receives constant "accepted" receipt

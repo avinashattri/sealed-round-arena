@@ -48,3 +48,76 @@ def test_6_golden_hash():
     expected = "b06a229070741292512e8760f470dd7a4c46ccfdf253df781d88dabe58c1ccb1"
     actual = entry_hash(GENESIS, {"a": 1})
     assert actual == expected
+
+
+# ── P3.T3 Crypto tests ─────────────────────────────────────────────────────
+
+
+def test_7_commitment_roundtrip():
+    """make_commitment(items) -> (nonce_hex, commitment_hex); check_commitment verifies."""
+    from contracts.crypto.commit import check_commitment, make_commitment
+
+    items = ["attack A", "attack B", "attack C"]
+    nonce_hex, commitment_hex = make_commitment(items)
+
+    assert len(nonce_hex) == 64  # 32 bytes = 64 hex chars
+    assert len(commitment_hex) == 64  # SHA256 = 64 hex chars
+    assert check_commitment(items, nonce_hex, commitment_hex) is True
+
+
+def test_8_commitment_fails_when_payload_changes():
+    """Altering one item breaks the commitment."""
+    from contracts.crypto.commit import check_commitment, make_commitment
+
+    items = ["attack A", "attack B"]
+    nonce_hex, commitment_hex = make_commitment(items)
+
+    tampered = ["attack A", "attack B TAMPERED"]
+    assert check_commitment(tampered, nonce_hex, commitment_hex) is False
+
+
+def test_9_seal_unseal_roundtrip():
+    """seal(pub_hex, data) / unseal(priv_hex, blob) roundtrip."""
+    from contracts.crypto.seal import new_round_keys, seal, unseal
+
+    priv_hex, pub_hex = new_round_keys()
+    plaintext = b"super secret attack payload"
+    blob = seal(pub_hex, plaintext)
+    recovered = unseal(priv_hex, blob)
+
+    assert recovered == plaintext
+
+
+def test_10_wrong_private_key_raises():
+    """Unsealing with wrong private key raises CryptoError."""
+    from nacl.exceptions import CryptoError
+
+    from contracts.crypto.seal import CryptoError as SealCryptoError
+    from contracts.crypto.seal import new_round_keys, seal, unseal
+
+    assert SealCryptoError is CryptoError
+
+    _, pub_hex = new_round_keys()
+    wrong_priv_hex, _ = new_round_keys()
+
+    blob = seal(pub_hex, b"secret")
+    import pytest
+
+    with pytest.raises(CryptoError):
+        unseal(wrong_priv_hex, blob)
+
+
+def test_11_flipped_ciphertext_byte_raises():
+    """Bit-flip in ciphertext raises CryptoError."""
+    from nacl.exceptions import CryptoError
+
+    from contracts.crypto.seal import new_round_keys, seal, unseal
+
+    priv_hex, pub_hex = new_round_keys()
+    blob = bytearray(seal(pub_hex, b"secret"))
+    blob[10] ^= 0xFF  # flip bits in one byte
+
+    import pytest
+
+    with pytest.raises(CryptoError):
+        unseal(priv_hex, bytes(blob))

@@ -70,7 +70,11 @@ async def call_blue_filter(route: str, req: FilterRequest) -> FilterVerdict:
 
 
 async def call_model(
-    messages: list[dict[str, Any]], temperature: float = 0.0, seed: int = 1, max_tokens: int = 128
+    messages: list[dict[str, Any]],
+    temperature: float = 0.0,
+    seed: int = 1,
+    max_tokens: int = 128,
+    cache_prompt: bool = False,
 ) -> dict[str, Any]:
     async with httpx.AsyncClient(timeout=120.0) as client:
         payload = {
@@ -78,7 +82,7 @@ async def call_model(
             "temperature": temperature,
             "seed": seed,
             "max_tokens": max_tokens,
-            "cache_prompt": False,
+            "cache_prompt": cache_prompt,
         }
         resp = await client.post(
             f"{MODEL_URL}/v1/chat/completions",
