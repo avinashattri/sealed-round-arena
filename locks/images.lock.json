@@ -3,5 +3,9 @@
   "sra/broker:dev": "sra/broker@sha256:7da4f73cad4791a5aab70fe225e48b1bb96df10be5130a17e87d37cd4b6c7ae4",
   "sra/audit:dev": "sra/audit@sha256:6c5ff4c6924ead38372a066d8bcf1ca15f5f5563cb88dc40ccbfcbe75053ddcb",
   "sra/probe:dev": "sra/probe@sha256:a34418f205b7b5061ef17552bd4bac02230a58cb40644f633f7d92eeb103947a",
-  "ghcr.io/ggml-org/llama.cpp:server": "ghcr.io/ggml-org/llama.cpp@sha256:052888c603894ecfa08deb6714fdc2d7084e491e174d5ab41bfb36b49ee7151c"
+  "ghcr.io/ggml-org/llama.cpp:server": "ghcr.io/ggml-org/llama.cpp@sha256:052888c603894ecfa08deb6714fdc2d7084e491e174d5ab41bfb36b49ee7151c",
+  "sra/red:dev": "sra/red@sha256:732c4acc1499e165135f5c78135e16bebc01f23bd434430e703ba104866e6364",
+  "sra/blue:v1": "sra/blue@sha256:5d4a479272672de023c08576d54a8b632dd5b33633a68c17a7a0bfe10ad7899e",
+  "sra/blue:v2": "sra/blue@sha256:d22b6133dc997cc8b58824a9db347c87ef71256dd7c43c8d40f01770126bd72c",
+  "sra/blue:v3": "sra/blue@sha256:8e2ac9dd2aa7c636775372bcd5c0adf44933c97d664f2de1155e6af554c8505d"
 }

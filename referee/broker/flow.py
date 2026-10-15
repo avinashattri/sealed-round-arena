@@ -204,9 +204,6 @@ async def execute_submit_flow(req: Submit) -> Receipt:
         actor=Actor.BLUE,
     )
 
-    if out_verdict.verdict != Verdict.PASS:
-        return Receipt(challenge_id=ch_id, status="accepted")
-
     # Step 6: Call oracle scoring
     oracle_res = await call_oracle(OracleRequest(challenge_id=ch_id, text=model_text))
 
@@ -217,6 +214,9 @@ async def execute_submit_flow(req: Submit) -> Receipt:
         content=oracle_content,
         actor=Actor.ORACLE,
     )
+
+    if out_verdict.verdict != Verdict.PASS:
+        return Receipt(challenge_id=ch_id, status="accepted")
 
     # Step 7: Audit delivered
     await audit(
