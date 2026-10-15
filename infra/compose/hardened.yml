@@ -33,6 +33,7 @@ services:
     environment:
       - ZONE=broker
       - PORT=8000
+      - MODEL_URL=${MODEL_URL:-http://model:8080}
     volumes:
       - broker_sealed:/sealed
       - ./loop/model/system_prompt_public.txt:/app/system_prompt_public.txt:ro
@@ -93,7 +94,7 @@ services:
 
   blue:
     <<: *x-zone
-    image: sra/stub:dev
+    image: ${BLUE_IMAGE:-sra/stub:dev}
     container_name: sra-hardened-blue
     environment:
       - STUB_NAME=blue
@@ -114,6 +115,8 @@ services:
     secrets:
       - token_red
       - red_canary
+      - red_attacks
+      - red_meta
     networks:
       - red_net
     command: ["sleep", "infinity"]

@@ -32,6 +32,10 @@ def main():
     load_parser.add_argument("campaign_id")
     load_parser.add_argument("round_id")
 
+    post_parser = subparsers.add_parser("post")
+    post_parser.add_argument("route")
+    post_parser.add_argument("payload", nargs="?", default="{}")
+
     args = parser.parse_args()
 
     token = get_admin_token()
@@ -63,6 +67,21 @@ def main():
         if resp.status_code != 200:
             sys.exit(f"Failed ({resp.status_code}): {resp.text}")
         print(json.dumps(resp.json(), indent=2))
+
+    elif args.command == "post":
+        try:
+            data = json.loads(args.payload) if args.payload else {}
+        except (json.JSONDecodeError, TypeError):
+            data = None
+        route = args.route if args.route.startswith("/") else f"/{args.route}"
+        url = f"{base_url}{route}"
+        if isinstance(data, dict):
+            resp = httpx.post(url, json=data, headers=headers, timeout=30.0)
+        else:
+            resp = httpx.post(url, content=args.payload.encode(), headers=headers, timeout=30.0)
+        if resp.status_code >= 400:
+            sys.exit(f"Failed ({resp.status_code}): {resp.text}")
+        print(resp.text)
 
 
 if __name__ == "__main__":

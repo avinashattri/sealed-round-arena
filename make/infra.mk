@@ -43,3 +43,7 @@ fw-on: ## Apply firewall backstop rules (sudo)
 .PHONY: fw-off
 fw-off: ## Remove firewall backstop rules (sudo)
 > bash infra/firewall/remove.sh
+
+.PHONY: pin
+pin: ## Write image digests to locks/images.lock.json
+> .venv/bin/python infra/scripts/pin.py write

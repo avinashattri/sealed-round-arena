@@ -1,0 +1,10 @@
+.PHONY: reveal-demo
+reveal-demo: ## Mini round with tampered attack ch-0003 to assert commitment mismatch is caught at reveal
+> @rm -f /tmp/reveal_demo.log
+> @.venv/bin/python -m referee.controller run --campaign c-001 --round r-001 --attacks loop/data/attacks/F1.json --defense 1 --size mini --stub-model --stand-in-red --tamper-attack ch-0003 >/tmp/reveal_demo.log 2>&1 || true
+> @if grep -q "COMMITMENT MISMATCH" /tmp/reveal_demo.log; then \
+> 	echo "OK: the altered attack was caught"; \
+> else \
+> 	cat /tmp/reveal_demo.log; \
+> 	echo "FAIL: COMMITMENT MISMATCH not caught"; exit 1; \
+> fi

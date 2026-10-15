@@ -1,0 +1,7 @@
+{
+  "sra/stub:dev": "sra/stub@sha256:d0c24de17ca0d8858156d9dd541b34a4dc6a4b72e24bdd8dfc5b9e4543c5eafc",
+  "sra/broker:dev": "sra/broker@sha256:7da4f73cad4791a5aab70fe225e48b1bb96df10be5130a17e87d37cd4b6c7ae4",
+  "sra/audit:dev": "sra/audit@sha256:6c5ff4c6924ead38372a066d8bcf1ca15f5f5563cb88dc40ccbfcbe75053ddcb",
+  "sra/probe:dev": "sra/probe@sha256:a34418f205b7b5061ef17552bd4bac02230a58cb40644f633f7d92eeb103947a",
+  "ghcr.io/ggml-org/llama.cpp:server": "ghcr.io/ggml-org/llama.cpp@sha256:052888c603894ecfa08deb6714fdc2d7084e491e174d5ab41bfb36b49ee7151c"
+}
