@@ -7,6 +7,7 @@ images-build: ## Build docker images (stub, probe, broker)
 > docker build -f infra/docker/stub.Dockerfile -t sra/stub:dev .
 > docker build -f infra/docker/probe.Dockerfile -t sra/probe:dev .
 > docker build -f infra/docker/zone.Dockerfile --build-arg COMPONENT=broker --build-arg SRC=referee/broker --build-arg PORT=8000 -t sra/broker:dev .
+> docker build -f infra/docker/zone.Dockerfile --build-arg COMPONENT=audit --build-arg SRC=referee/audit --build-arg PORT=7000 -t sra/audit:dev .
 
 .PHONY: naive
 naive: ## Start naive compose environment

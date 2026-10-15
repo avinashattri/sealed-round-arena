@@ -43,7 +43,7 @@ def verify_audit_log(
             reasons.append(f"truncated: expected {cp_count} entries, found {len(entries)}")
 
     seen_seqs = set()
-    prev_seq = -1
+    prev_seq = 0
     prev_hash = GENESIS
 
     for _idx, entry in enumerate(entries):
@@ -124,12 +124,20 @@ def verify_audit_log(
 
 def main():
     parser = argparse.ArgumentParser(description="Verify audit log integrity")
-    parser.add_argument("--log", required=True, help="Path to audit log JSONL file")
+    parser.add_argument(
+        "log", nargs="?", default=None, help="Path to audit log JSONL file (positional)"
+    )
+    parser.add_argument(
+        "--log",
+        dest="log_flag",
+        default=None,
+        help="Path to audit log JSONL file (flag, deprecated)",
+    )
     parser.add_argument("--checkpoint", default=None, help="Path to checkpoint JSON file")
     parser.add_argument("--pubkey", default=None, help="Path to Ed25519 public key hex file")
     args = parser.parse_args()
 
-    log_path = Path(args.log)
+    log_path = Path(args.log or args.log_flag)
     if not log_path.exists():
         sys.exit(f"Log file not found: {log_path}")
 
