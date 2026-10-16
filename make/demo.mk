@@ -8,3 +8,19 @@ reveal-demo: ## Mini round with tampered attack ch-0003 to assert commitment mis
 > 	cat /tmp/reveal_demo.log; \
 > 	echo "FAIL: COMMITMENT MISMATCH not caught"; exit 1; \
 > fi
+
+.PHONY: record
+record: ## Copy validated evidence into replay/ and create meta.json
+> @.venv/bin/python scripts/record.py
+
+.PHONY: replay
+replay: ## Re-render recorded demo offline without containers
+> @.venv/bin/python scripts/demo.py --replay $(if $(SECTION),--section $(SECTION),)
+
+.PHONY: demo
+demo: ## Run live demonstration (FAST=1 skips metrics)
+> @.venv/bin/python scripts/demo.py $(if $(SECTION),--section $(SECTION),) $(if $(FAST),--fast,)
+
+.PHONY: dashboard
+dashboard: ## Start Streamlit dashboard on port 8501
+> @.venv/bin/streamlit run dashboard/app.py --server.address 0.0.0.0 --server.headless true --server.port 8501

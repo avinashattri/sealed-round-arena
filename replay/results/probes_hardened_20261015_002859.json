@@ -1,0 +1,7 @@
+[
+  {
+    "probe": "B1",
+    "verdict": "HELD",
+    "evidence": "Egress blocked: TCP to 172.18.0.1:9999 refused/timed out and DNS failed"
+  }
+]

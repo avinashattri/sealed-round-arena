@@ -1,0 +1,7 @@
+{
+  "recorded_at": "2026-10-16T12:04:04.054202+00:00",
+  "machine": "Linux 7.0.0-38-generic (x86_64)",
+  "commit": "e28e3b57ecc84f0a426099bc9933847d1dd91818",
+  "runtime": "runc",
+  "size": "full"
+}

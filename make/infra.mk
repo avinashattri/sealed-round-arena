@@ -47,3 +47,7 @@ fw-off: ## Remove firewall backstop rules (sudo)
 .PHONY: pin
 pin: ## Write image digests to locks/images.lock.json
 > .venv/bin/python infra/scripts/pin.py write
+
+.PHONY: check-env
+check-env: ## Verify Docker, Python, model weights, datasets, image locks
+> .venv/bin/python scripts/check_env.py

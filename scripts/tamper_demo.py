@@ -9,14 +9,15 @@ import sys
 from pathlib import Path
 
 # Add repo root to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO_ROOT))
 
 from referee.verify.tamper import ALL as TAMPERS
 from referee.verify.verify import verify_audit_log
 
-LOG_PATH = Path("evidence/audit_export.jsonl")
-PUBKEY_PATH = Path("evidence/audit_pubkey.hex")
-ANCHORS_DIR = Path("evidence/anchors")
+LOG_PATH = REPO_ROOT / "evidence" / "audit_export.jsonl"
+PUBKEY_PATH = REPO_ROOT / "evidence" / "audit_pubkey.hex"
+ANCHORS_DIR = REPO_ROOT / "evidence" / "anchors"
 
 
 def load_log(path: Path) -> list[dict]:
@@ -32,7 +33,8 @@ def load_log(path: Path) -> list[dict]:
 def load_checkpoint(anchors_dir: Path) -> dict | None:
     if not anchors_dir.exists():
         return None
-    anchors = sorted(anchors_dir.glob("*.json"), reverse=True)
+    # Sort by mtime descending, identical to `ls -t`
+    anchors = sorted(anchors_dir.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
     if not anchors:
         return None
     return json.loads(anchors[0].read_text())

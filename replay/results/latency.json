@@ -1,0 +1,22 @@
+{
+  "label": "laptop VM, plugged in, medians + spread",
+  "runtime": "runc",
+  "samples": 5,
+  "direct_ms": {
+    "p50": 615.77,
+    "p95": 812.52,
+    "min": 604.23,
+    "max": 812.52
+  },
+  "arena_ms": {
+    "p50": 1455.0,
+    "p95": 1780.33,
+    "min": 1335.67,
+    "max": 1780.33
+  },
+  "overhead": {
+    "overhead_ratio": 1.3629,
+    "overhead_percent": "136.3%",
+    "delta_p50_ms": 839.23
+  }
+}

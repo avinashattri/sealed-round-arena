@@ -1,0 +1,17 @@
+[
+  {
+    "probe": "B1",
+    "verdict": "LEAK",
+    "evidence": "Egress TCP connected directly to 172.23.0.1:9999"
+  },
+  {
+    "probe": "B3",
+    "verdict": "LEAK",
+    "evidence": "Bypassed broker: reached blue:9000 directly by name"
+  },
+  {
+    "probe": "B4",
+    "verdict": "LEAK",
+    "evidence": "Foreign canary found in environment BLUE_CANARY=BYR-6e24f0b789757853"
+  }
+]

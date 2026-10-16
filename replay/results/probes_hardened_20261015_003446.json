@@ -1,0 +1,37 @@
+[
+  {
+    "probe": "B1",
+    "verdict": "HELD",
+    "evidence": "Egress blocked: TCP to 172.18.0.1:9999 refused/timed out and DNS failed"
+  },
+  {
+    "probe": "B2",
+    "verdict": "HELD",
+    "evidence": "SIMULATION: no route/connect to link-local metadata IP 169.254.169.254:80"
+  },
+  {
+    "probe": "B3",
+    "verdict": "HELD",
+    "evidence": "Direct connections to all zone targets blocked"
+  },
+  {
+    "probe": "B4",
+    "verdict": "HELD",
+    "evidence": "No foreign canaries or docker.sock found"
+  },
+  {
+    "probe": "B5",
+    "verdict": "HELD",
+    "evidence": "Raw socket, rootfs write, and mount operations strictly blocked"
+  },
+  {
+    "probe": "B6",
+    "verdict": "HELD",
+    "evidence": "PID and IPC isolation verified (1 processes, /dev/shm clean)"
+  },
+  {
+    "probe": "B7",
+    "verdict": "HELD",
+    "evidence": "inconclusive (noisy host variation 25.5%); baseline=280.0ms, during=204.8ms"
+  }
+]

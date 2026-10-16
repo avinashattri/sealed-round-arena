@@ -1,0 +1,7 @@
+[
+  {
+    "probe": "B1",
+    "verdict": "LEAK",
+    "evidence": "Egress TCP connected directly to 172.18.0.1:9999"
+  }
+]

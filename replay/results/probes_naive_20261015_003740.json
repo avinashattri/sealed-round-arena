@@ -1,0 +1,37 @@
+[
+  {
+    "probe": "B1",
+    "verdict": "LEAK",
+    "evidence": "Egress TCP connected directly to 172.23.0.1:9999"
+  },
+  {
+    "probe": "B2",
+    "verdict": "HELD",
+    "evidence": "SIMULATION: no route/connect to link-local metadata IP 169.254.169.254:80"
+  },
+  {
+    "probe": "B3",
+    "verdict": "LEAK",
+    "evidence": "Bypassed broker: reached blue:9000 directly by name"
+  },
+  {
+    "probe": "B4",
+    "verdict": "LEAK",
+    "evidence": "Foreign canary found in environment MODEL_CANARY=BYR-a74a3627e7ab397e"
+  },
+  {
+    "probe": "B5",
+    "verdict": "ERROR",
+    "evidence": "Container failed or produced invalid output: no such service: blue_probe\n"
+  },
+  {
+    "probe": "B6",
+    "verdict": "HELD",
+    "evidence": "PID and IPC isolation verified (1 processes, /dev/shm clean)"
+  },
+  {
+    "probe": "B7",
+    "verdict": "LEAK",
+    "evidence": "Latency degradation observed: during/baseline ratio = 1.51x"
+  }
+]

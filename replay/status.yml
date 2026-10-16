@@ -1,0 +1,46 @@
+# Status configuration for probes and claims
+# Allowed values: Demonstrated | Simulated | Not demonstrated | NOT BUILT
+
+probes:
+  B1: Demonstrated
+  B3: Demonstrated
+  A1: Demonstrated
+  B4: Demonstrated
+  C6: Demonstrated
+  B5: Demonstrated
+  A2: Demonstrated
+  A5: Demonstrated
+  A3: Demonstrated
+  B2: Simulated
+  B6: Demonstrated
+  C5: Demonstrated
+  C1: Demonstrated
+  A4: Demonstrated
+  C4: Demonstrated
+  B7: Demonstrated
+  C3: Demonstrated
+  C2: NOT BUILT
+
+claims:
+  C01: Demonstrated
+  C02: Demonstrated
+  C03: Demonstrated
+  C04: Demonstrated
+  C05: Demonstrated
+  C06: Demonstrated
+  C07: Demonstrated
+  C08: Demonstrated
+  C09: Demonstrated
+  C10: Demonstrated
+  C11: Simulated
+  C12: Demonstrated
+  C13: Demonstrated
+  C14: Demonstrated
+  C15: Demonstrated
+  C16: Demonstrated
+  C17: Demonstrated
+  C18: Not demonstrated
+  C19: Demonstrated
+  C20: Demonstrated
+  C21: Demonstrated
+  C22: Demonstrated

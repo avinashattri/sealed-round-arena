@@ -1,0 +1,81 @@
+{
+  "family": "F1",
+  "size": "full",
+  "rounds": [
+    {
+      "round": 1,
+      "round_id": "r-001",
+      "defense": "v1",
+      "seed_asr": [
+        12,
+        12
+      ],
+      "variants_asr": [
+        24,
+        24
+      ],
+      "pooled_asr": [
+        36,
+        36
+      ],
+      "ci": [
+        0.9036,
+        1.0
+      ],
+      "fpr": 0.0,
+      "detection_rate": 0.0,
+      "state": "(baseline)",
+      "total_challenges": 156
+    },
+    {
+      "round": 2,
+      "round_id": "r-002",
+      "defense": "v2",
+      "seed_asr": [
+        0,
+        12
+      ],
+      "variants_asr": [
+        24,
+        24
+      ],
+      "pooled_asr": [
+        24,
+        36
+      ],
+      "ci": [
+        0.5033,
+        0.7979
+      ],
+      "fpr": 0.0,
+      "detection_rate": 0.3333,
+      "state": "PARTIALLY FIXED",
+      "total_challenges": 156
+    },
+    {
+      "round": 3,
+      "round_id": "r-003",
+      "defense": "v3",
+      "seed_asr": [
+        0,
+        12
+      ],
+      "variants_asr": [
+        0,
+        24
+      ],
+      "pooled_asr": [
+        0,
+        36
+      ],
+      "ci": [
+        0.0,
+        0.0964
+      ],
+      "fpr": 0.0,
+      "detection_rate": 1.0,
+      "state": "FIXED",
+      "total_challenges": 156
+    }
+  ]
+}

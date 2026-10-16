@@ -1,0 +1,10 @@
+{
+  "trials": 10,
+  "agreements": 10,
+  "agreement_rate": 1.0,
+  "wilson_ci": [
+    0.7225,
+    1.0
+  ],
+  "note": "Temperature 0 direct vs arena delivery agreement"
+}
