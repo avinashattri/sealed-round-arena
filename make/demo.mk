@@ -24,3 +24,12 @@ demo: ## Run live demonstration (FAST=1 skips metrics)
 .PHONY: dashboard
 dashboard: ## Start Streamlit dashboard on port 8501
 > @.venv/bin/streamlit run dashboard/app.py --server.address 0.0.0.0 --server.headless true --server.port 8501
+
+.PHONY: ui-build
+ui-build: ## Rebuild web/data.js bundle from current evidence or replay
+> @.venv/bin/python scripts/build_ui_data.py
+
+.PHONY: ui
+ui: ui-build ## Start modern web console HTTP server on port 8080
+> @echo "Starting Sealed-Round Arena Web Console on http://localhost:8080 ..."
+> @python3 -m http.server 8080 --directory web

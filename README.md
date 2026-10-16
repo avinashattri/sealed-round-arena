@@ -38,6 +38,12 @@ make demo FAST=1
 
 # 4. Instant offline replay and audit verification (<2s)
 make replay
+
+# 5. Launch interactive web console (HTML5/CSS/JS security console on port 8080)
+make ui
+
+# 6. Or launch Streamlit evaluation dashboard (port 8501)
+make dashboard
 ```
 
 ---

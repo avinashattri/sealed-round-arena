@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sealed-Round Arena :: Security & Evaluation Console</title>
+  <meta name="description" content="Isolated, tamper-evident evaluation platform for LLM red-teaming defenses across sealed rounds without covert channels or leakage.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top Navigation & Telemetry HUD -->
+  <header class="app-header" id="appHeader">
+    <div class="header-container">
+      <div class="brand-section">
+        <div class="brand-shield" id="brandShield">🛡️</div>
+        <div>
+          <h1 class="brand-title">SEALED-ROUND ARENA</h1>
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 2px;">
+            <span class="brand-tag">v1.0 Submission</span>
+            <span style="font-size: 0.75rem; color: var(--text-dim);">Isolated Evaluation Framework</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-telemetry" id="headerTelemetry">
+        <div class="telemetry-item">
+          <span class="status-indicator live" id="modeIndicator"></span>
+          <span>MODE: <strong id="modeText">REPLAY / AUDIT</strong></span>
+        </div>
+        <div class="telemetry-item">
+          <span>RUNTIME: <strong id="runtimeText">runc (hardened)</strong></span>
+        </div>
+        <div class="telemetry-item">
+          <span>STATE: <span class="badge-pill badge-held" id="statePill">FIXED (n=36)</span></span>
+        </div>
+        <div class="telemetry-item">
+          <span>EGRESS: <span class="badge-pill badge-held">DROP (0-bit)</span></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Tabs Navigation -->
+  <nav class="tab-nav" id="mainTabNav">
+    <button class="tab-btn active" id="tabBtnArch" onclick="switchTab('arch')">
+      <span>🌐</span> 3-Zone Architecture & Simulator
+    </button>
+    <button class="tab-btn" id="tabBtnProbes" onclick="switchTab('probes')">
+      <span>🔬</span> Leak Lab (18 Probes)
+    </button>
+    <button class="tab-btn" id="tabBtnLoop" onclick="switchTab('loop')">
+      <span>🔄</span> Defense Loop & Traces
+    </button>
+    <button class="tab-btn" id="tabBtnAudit" onclick="switchTab('audit')">
+      <span>📜</span> Cryptographic Audit & Tamper Lab
+    </button>
+    <button class="tab-btn" id="tabBtnCrypto" onclick="switchTab('crypto')">
+      <span>🔐</span> Commit-Reveal & SealedBox
+    </button>
+    <button class="tab-btn" id="tabBtnMetrics" onclick="switchTab('metrics')">
+      <span>📊</span> Benchmarks & Threat Model
+    </button>
+  </nav>
+
+  <!-- Main Content Workspace -->
+  <main class="app-main" id="appMain">
+
+    <!-- KPI Summary Row -->
+    <section class="kpi-grid" id="kpiGrid">
+      <div class="glass-panel kpi-card kpi-success" id="kpiProbes">
+        <div class="kpi-label">Threat Probes Held</div>
+        <div class="kpi-value" id="kpiProbesVal">16 / 18</div>
+        <div class="kpi-sub">1 Simulated (B2) • 1 Unmeasured (C2)</div>
+      </div>
+
+      <div class="glass-panel kpi-card kpi-success" id="kpiLoop">
+        <div class="kpi-label">Certified Progression</div>
+        <div class="kpi-value" id="kpiLoopVal">0.0% ASR</div>
+        <div class="kpi-sub">Round 3 v3 Certified FIXED (n=36)</div>
+      </div>
+
+      <div class="glass-panel kpi-card" id="kpiAudit">
+        <div class="kpi-label">Verified Hash Chain</div>
+        <div class="kpi-value" id="kpiAuditVal">5,218</div>
+        <div class="kpi-sub">5/5 Tamper Classes Caught</div>
+      </div>
+
+      <div class="glass-panel kpi-card" id="kpiLatency">
+        <div class="kpi-label">Mediation Overhead</div>
+        <div class="kpi-value" id="kpiLatencyVal">+839 ms</div>
+        <div class="kpi-sub">Dual-pass filter, audit & canary scan</div>
+      </div>
+
+      <div class="glass-panel kpi-card kpi-success" id="kpiFidelity">
+        <div class="kpi-label">Generation Fidelity</div>
+        <div class="kpi-value" id="kpiFidelityVal">100.0%</div>
+        <div class="kpi-sub">0 token corruption (CI [0.72, 1.00])</div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 1: 3-ZONE ARCHITECTURE & INTERACTIVE PACKET SIMULATOR             -->
+    <!-- ===================================================================== -->
+    <section class="tab-content active" id="viewArch">
+      <div class="arch-container">
+        
+        <div class="glass-panel canvas-wrapper">
+          <div class="canvas-controls">
+            <span style="font-family: var(--font-brand); font-weight: 600; font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem; margin-right: 0.5rem;">
+              <span>⚡</span> Packet Simulator:
+            </span>
+            <button class="btn-interactive btn-primary" id="btnSimSealed" onclick="simulateRoute('sealed')">
+              ▶ Run Mode A (Sealed Execution)
+            </button>
+            <button class="btn-interactive" id="btnSimEgress" onclick="simulateRoute('egress')">
+              🚫 Simulate Egress Escape (B1)
+            </button>
+            <button class="btn-interactive" id="btnSimBypass" onclick="simulateRoute('bypass')">
+              ⛔ Simulate Zone Bypass (B3)
+            </button>
+            <button class="btn-interactive" id="btnSimReset" onclick="resetCanvas()">
+              ↺ Reset Visualizer
+            </button>
+          </div>
+
+          <!-- SVG Visualizer Canvas -->
+          <svg id="archSvg" viewBox="0 0 920 460">
+            <defs>
+              <!-- Gradients for Zones -->
+              <linearGradient id="gradRed" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="rgba(239, 68, 68, 0.15)"/>
+                <stop offset="100%" stop-color="rgba(15, 23, 42, 0.8)"/>
+              </linearGradient>
+              <linearGradient id="gradBroker" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="rgba(0, 242, 254, 0.2)"/>
+                <stop offset="100%" stop-color="rgba(15, 23, 42, 0.85)"/>
+              </linearGradient>
+              <linearGradient id="gradBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="rgba(59, 130, 246, 0.15)"/>
+                <stop offset="100%" stop-color="rgba(15, 23, 42, 0.8)"/>
+              </linearGradient>
+              <linearGradient id="gradModel" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="rgba(168, 85, 247, 0.15)"/>
+                <stop offset="100%" stop-color="rgba(15, 23, 42, 0.8)"/>
+              </linearGradient>
+              <linearGradient id="gradAudit" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="rgba(16, 185, 129, 0.15)"/>
+                <stop offset="100%" stop-color="rgba(15, 23, 42, 0.8)"/>
+              </linearGradient>
+            </defs>
+
+            <!-- Network Bridges (Dashed Lines) -->
+            <!-- Red to Broker Bridge -->
+            <line id="bridgeRedBroker" x1="180" y1="210" x2="380" y2="210" class="svg-bridge" />
+            <!-- Broker to Blue Bridge -->
+            <line id="bridgeBrokerBlue" x1="540" y1="160" x2="700" y2="110" class="svg-bridge" />
+            <!-- Blue to Model Bridge -->
+            <line id="bridgeBrokerModel" x1="540" y1="260" x2="700" y2="310" class="svg-bridge" />
+            <!-- Broker to Audit Bridge -->
+            <line id="bridgeBrokerAudit" x1="460" y1="290" x2="460" y2="380" class="svg-bridge" />
+
+            <!-- ZONE 1: RED ZONE -->
+            <g id="zoneRedGroup">
+              <rect x="40" y="140" width="160" height="140" class="svg-zone svg-zone-red" fill="url(#gradRed)" />
+              <text x="120" y="175" text-anchor="middle" class="svg-text-title">RED ZONE</text>
+              <text x="120" y="195" text-anchor="middle" class="svg-text-sub">172.30.1.0/24</text>
+              <text x="120" y="215" text-anchor="middle" class="svg-text-sub">Untrusted Client</text>
+              <text x="120" y="245" text-anchor="middle" fill="#ef4444" font-family="var(--font-mono)" font-size="10px">CAP_NET_RAW dropped</text>
+            </g>
+
+            <!-- ZONE 2: REFEREE / BROKER (GATEWAY) -->
+            <g id="zoneBrokerGroup">
+              <rect x="360" y="110" width="200" height="180" class="svg-zone svg-zone-broker" fill="url(#gradBroker)" />
+              <text x="460" y="145" text-anchor="middle" class="svg-text-title">BROKER / REFEREE</text>
+              <text x="460" y="165" text-anchor="middle" class="svg-text-sub">172.30.0.0/16 (Multi-Homed)</text>
+              <text x="460" y="190" text-anchor="middle" fill="var(--cyan)" font-family="var(--font-mono)" font-size="11px">Default-Deny Gateway</text>
+              <text x="460" y="210" text-anchor="middle" class="svg-text-sub">0-Bits Receipt Channel</text>
+              <text x="460" y="230" text-anchor="middle" class="svg-text-sub">SealedBox Curve25519</text>
+              <text x="460" y="255" text-anchor="middle" fill="#38bdf8" font-family="var(--font-mono)" font-size="10px">RFC 8785 Canonical JSON</text>
+            </g>
+
+            <!-- ZONE 3: BLUE DEFENSE -->
+            <g id="zoneBlueGroup">
+              <rect x="680" y="50" width="180" height="120" class="svg-zone svg-zone-blue" fill="url(#gradBlue)" />
+              <text x="770" y="85" text-anchor="middle" class="svg-text-title">BLUE DEFENSE</text>
+              <text x="770" y="105" text-anchor="middle" class="svg-text-sub">172.30.2.0/24</text>
+              <text x="770" y="125" text-anchor="middle" class="svg-text-sub">v1 / v2 / v3 Rules</text>
+              <text x="770" y="145" text-anchor="middle" fill="#60a5fa" font-family="var(--font-mono)" font-size="10px">Token Scanner + Redact</text>
+            </g>
+
+            <!-- ZONE 4: MODEL ZONE -->
+            <g id="zoneModelGroup">
+              <rect x="680" y="250" width="180" height="120" class="svg-zone svg-zone-model" fill="url(#gradModel)" />
+              <text x="770" y="285" text-anchor="middle" class="svg-text-title">MODEL ZONE</text>
+              <text x="770" y="305" text-anchor="middle" class="svg-text-sub">172.30.3.0/24</text>
+              <text x="770" y="325" text-anchor="middle" class="svg-text-sub">Qwen2.5-1.5B (llama.cpp)</text>
+              <text x="770" y="345" text-anchor="middle" fill="#c084fc" font-family="var(--font-mono)" font-size="10px">cache_prompt: false</text>
+            </g>
+
+            <!-- ZONE 5: AUDIT LOG SERVICE -->
+            <g id="zoneAuditGroup">
+              <rect x="360" y="360" width="200" height="85" class="svg-zone svg-zone-audit" fill="url(#gradAudit)" />
+              <text x="460" y="390" text-anchor="middle" class="svg-text-title">APPEND-ONLY AUDIT</text>
+              <text x="460" y="410" text-anchor="middle" class="svg-text-sub">Ed25519 Signed Chain</text>
+              <text x="460" y="428" text-anchor="middle" fill="#34d399" font-family="var(--font-mono)" font-size="10px">SQLite Immutable Triggers</text>
+            </g>
+
+            <!-- Dynamic Packet Layer -->
+            <g id="packetLayer"></g>
+          </svg>
+        </div>
+
+        <!-- Architecture Description Sidebar -->
+        <div class="glass-panel arch-sidebar">
+          <div class="sidebar-title">Security Invariants</div>
+
+          <div class="sidebar-card">
+            <h4><span>🛡️</span> 0-Bits Verdict Channel</h4>
+            <p>During live round execution (Mode A), Red receives strictly constant receipts: <code>{"status": "accepted"}</code>. Attack results, scores, and Blue decisions are withheld until reveal.</p>
+          </div>
+
+          <div class="sidebar-card">
+            <h4><span>🔒</span> SealedBox Sealing</h4>
+            <p>Attacks are encrypted with Curve25519 SealedBox and pinned with SHA-256 commitments. Payloads cannot be retroactively altered at reveal.</p>
+          </div>
+
+          <div class="sidebar-card">
+            <h4><span>🚫</span> Egress Firewall Backstop</h4>
+            <p>Host iptables rules drop all packets exiting Docker internal bridges to external WAN, host metadata (169.254.169.254), or LAN.</p>
+          </div>
+
+          <div class="sidebar-card">
+            <h4><span>📜</span> Cryptographic Hash Chain</h4>
+            <p>Every event is canonically serialized (RFC 8785), chained with SHA-256 <code>prev_hash</code>, and signed by the referee key.</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 2: LEAK LAB (18 THREAT PROBES)                                    -->
+    <!-- ===================================================================== -->
+    <section class="tab-content" id="viewProbes">
+      <div class="glass-panel" style="padding: 1.5rem;">
+        
+        <div class="filter-bar">
+          <div class="filter-group">
+            <span style="font-weight: 600; font-size: 0.85rem; color: var(--text-dim);">FILTER LEVEL:</span>
+            <button class="filter-btn active" onclick="filterProbes('all', this)">All (18)</button>
+            <button class="filter-btn" onclick="filterProbes('L1', this)">L1 Network/OS</button>
+            <button class="filter-btn" onclick="filterProbes('L2', this)">L2 Broker/App</button>
+            <button class="filter-btn" onclick="filterProbes('L3', this)">L3 Audit/Crypto</button>
+          </div>
+
+          <input type="text" id="probeSearchInput" class="search-input" placeholder="Search probe vector or command..." oninput="searchProbes(this.value)">
+        </div>
+
+        <div class="table-wrapper">
+          <table class="sra-table" id="probesTable">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>ID</th>
+                <th>Vector Name</th>
+                <th>Level</th>
+                <th>Zone</th>
+                <th>Naive Status</th>
+                <th>Hardened Status</th>
+                <th>Proof Command</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="probesTableBody">
+              <!-- Dynamically populated from data.js -->
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 3: CLOSED-LOOP DEFENSE PROGRESSION & TRACES                       -->
+    <!-- ===================================================================== -->
+    <section class="tab-content" id="viewLoop">
+      <div class="loop-grid">
+        
+        <!-- Rounds Selector -->
+        <div class="round-cards-list" id="roundCardsList">
+          <!-- Populated by JS: Round 1, 2, 3 -->
+        </div>
+
+        <!-- Challenge Trace Inspector -->
+        <div class="glass-panel trace-viewer" id="traceViewer">
+          <div class="trace-controls">
+            <label style="font-size: 0.85rem; color: var(--text-dim); font-weight: 600;">SELECT CHALLENGE:</label>
+            <select class="sra-select" id="challengeSelect" onchange="loadChallengeDetail(this.value)">
+              <!-- Options populated dynamically -->
+            </select>
+            <div id="challengeBadgeRow" style="display: flex; gap: 0.5rem; margin-left: auto;">
+              <!-- Dynamic badges -->
+            </div>
+          </div>
+
+          <div>
+            <div style="font-size: 0.8rem; color: var(--text-dim); font-weight: 600; margin-bottom: 0.35rem; text-transform: uppercase;">
+              INPUT PROMPT (RED SUBMISSION):
+            </div>
+            <div class="code-block" id="promptDisplay">Select a challenge to view prompt.</div>
+          </div>
+
+          <div>
+            <div style="font-size: 0.8rem; color: var(--text-dim); font-weight: 600; margin-bottom: 0.35rem; text-transform: uppercase;">
+              MODEL RESPONSE (QWEN2.5-1.5B):
+            </div>
+            <div class="code-block" id="responseDisplay" style="color: #93c5fd;">Model output will appear here.</div>
+          </div>
+
+          <div>
+            <div style="font-size: 0.8rem; color: var(--text-dim); font-weight: 600; margin-bottom: 0.35rem; text-transform: uppercase;">
+              EXECUTION PATH & ORACLE EVALUATION:
+            </div>
+            <div class="code-block" id="pathDisplay" style="color: #6ee7b7; font-size: 0.78rem;">Oracle verdict & path trace.</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 4: CRYPTOGRAPHIC AUDIT & TAMPER LAB                              -->
+    <!-- ===================================================================== -->
+    <section class="tab-content" id="viewAudit">
+      <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+        <h3 style="font-family: var(--font-brand); font-size: 1.25rem; margin-bottom: 0.5rem;">
+          Verified Hash Chain (RFC 8785 Canonical JSON + Ed25519)
+        </h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Each event links to the preceding event via SHA-256 <code>prev_hash</code> and is digitally signed by the referee private key.
+        </p>
+
+        <!-- Block Chain Scroll Container -->
+        <div class="chain-scroll" id="chainBlocksContainer">
+          <!-- Populated from data.js -->
+        </div>
+      </div>
+
+      <!-- Live Tamper Simulation Lab -->
+      <div class="glass-panel tamper-console">
+        <div>
+          <h4 style="font-family: var(--font-brand); font-size: 1.1rem; color: #fff; margin-bottom: 0.5rem;">
+            🧪 In-Memory Tamper Playground
+          </h4>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Inject synthetic corruptions into an in-memory copy of the audit log to verify that the cryptographic verifier halts and detects tampering.
+          </p>
+
+          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <label style="font-size: 0.82rem; color: var(--text-dim); font-weight: 600;">SELECT TAMPER VECTOR:</label>
+            <select class="sra-select" id="tamperSelect">
+              <option value="content">Tamper Event Content (Flip bytes in payload)</option>
+              <option value="missing">Delete Intermediate Event (Sequence Gap)</option>
+              <option value="order">Swap Event Order (Out of Sequence)</option>
+              <option value="duplicate">Duplicate Event Sequence Number</option>
+              <option value="truncate">Truncate Audit Log (Drop Anchor Checkpoint)</option>
+            </select>
+
+            <button class="btn-interactive btn-primary" style="margin-top: 0.5rem; justify-content: center;" onclick="runTamperSim()">
+              ⚡ Inject Tamper & Run Cryptographic Verifier
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <h4 style="font-family: var(--font-brand); font-size: 1.1rem; color: #fff; margin-bottom: 0.5rem;">
+            Verifier Telemetry Output
+          </h4>
+          <div class="code-block" id="verifierOutput" style="min-height: 140px; font-size: 0.8rem;">
+[VERIFIER READY] Public key: 8408f6dcf7...
+Click "Inject Tamper & Run Cryptographic Verifier" to test detection.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 5: COMMIT-REVEAL & SEALEDBOX LAB                                  -->
+    <!-- ===================================================================== -->
+    <section class="tab-content" id="viewCrypto">
+      <div class="glass-panel" style="padding: 2rem;">
+        <h3 style="font-family: var(--font-brand); font-size: 1.35rem; margin-bottom: 0.5rem;">
+          Commit-Reveal Sealing & Verification Protocol
+        </h3>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+          Demonstration of Phase 1 (Commit), Phase 2 (Seal with Curve25519 SealedBox), and Phase 5 (Reveal & Validate).
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+          
+          <div class="sidebar-card">
+            <h4>1. Commit Phase (Phase 1)</h4>
+            <p style="margin-bottom: 0.75rem;">Red commits SHA-256 hash of plaintext attacks. Attacks are stored in plain memory on the client.</p>
+            <div class="code-block" style="font-size: 0.75rem;">
+SHA256(challenge_id + input + salt)
+--> Recorded in commitments.json
+--> Pinned to Audit Log
+            </div>
+          </div>
+
+          <div class="sidebar-card">
+            <h4>2. Sealing Phase (Phase 2)</h4>
+            <p style="margin-bottom: 0.75rem;">Curve25519 SealedBox encrypts challenge payload using Referee Public Key. Client cannot decrypt it.</p>
+            <div class="code-block" style="font-size: 0.75rem;">
+SealedBox.seal(payload, referee_pubkey)
+--> Stored on disk under evidence/sealed/
+--> Mode A execution begins
+            </div>
+          </div>
+
+          <div class="sidebar-card">
+            <h4>3. Reveal & Integrity (Phase 5)</h4>
+            <p style="margin-bottom: 0.75rem;">Red reveals plaintext attacks. Controller recalculates SHA-256 and checks against Phase 1 commitment.</p>
+            <div class="code-block" style="font-size: 0.75rem;">
+if sha256(revealed) != commitment:
+  COMMITMENT MISMATCH: ['ch-0003']
+  Status: REJECTED & FLAGGED
+            </div>
+          </div>
+
+        </div>
+
+        <div style="margin-top: 2rem; padding: 1.5rem; background: var(--bg-surface); border-radius: 10px; border: 1px solid var(--border-subtle);">
+          <h4 style="color: var(--cyan); margin-bottom: 0.75rem;">Live Commit-Reveal Proof Reproduction</h4>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+            Run the commit-reveal proof on the terminal to verify the altered attack test:
+          </p>
+          <div class="code-block" style="color: #f1f5f9; background: #07090e;">
+$ make reveal-demo
+Phase 1: Commit 3 challenges (ch-0001, ch-0002, ch-0003)
+Phase 2: Seal payloads with Curve25519 SealedBox
+Phase 5 (Attack): Tamper ch-0003 plaintext payload
+Verification result: COMMITMENT MISMATCH: ['ch-0003']
+Status: ALTERED PAYLOAD DETECTED (Exit 0)
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 6: BENCHMARKS & THREAT MODEL MATRIX                              -->
+    <!-- ===================================================================== -->
+    <section class="tab-content" id="viewMetrics">
+      
+      <!-- Performance Benchmarks Row -->
+      <div class="glass-panel" style="padding: 1.75rem; margin-bottom: 1.5rem;">
+        <h3 style="font-family: var(--font-brand); font-size: 1.25rem; margin-bottom: 0.35rem;">
+          Latency, Throughput & Overhead Benchmarks
+        </h3>
+        <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+          Empirical measurements on 4-core Linux VM against Qwen2.5-1.5B-Instruct.
+        </p>
+
+        <!-- Benchmark Visual Bars -->
+        <div class="benchmark-row">
+          <div class="bench-label">Direct Model (p50)</div>
+          <div class="bench-bar-container">
+            <div class="bench-bar bench-bar-direct" style="width: 42%;">615.8 ms</div>
+          </div>
+        </div>
+
+        <div class="benchmark-row">
+          <div class="bench-label">Arena Broker (p50)</div>
+          <div class="bench-bar-container">
+            <div class="bench-bar bench-bar-arena" style="width: 100%;">1,455.0 ms (+839.2 ms overhead)</div>
+          </div>
+        </div>
+
+        <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 1rem;">
+          Overhead accounts for: Ingress JSON validation, input rule evaluation (Blue), llama-server HTTP RPC, response canary oracle scan across 6 encodings, and Ed25519 hash-chain audit logging.
+        </div>
+      </div>
+
+      <!-- Threat Model Matrix Table -->
+      <div class="glass-panel" style="padding: 1.75rem;">
+        <h3 style="font-family: var(--font-brand); font-size: 1.25rem; margin-bottom: 0.5rem;">
+          Threat Matrix & Residual Risk Quantification (15 Vectors)
+        </h3>
+        <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Honest disclosures: bounded assumptions, proof vectors, and mitigation paths.
+        </p>
+
+        <div class="table-wrapper">
+          <table class="sra-table" id="threatTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Threat Category</th>
+                <th>Assurance Status</th>
+                <th>Attack Vector / Proof</th>
+                <th>Arena Mitigation</th>
+                <th>Failure Boundary</th>
+              </tr>
+            </thead>
+            <tbody id="threatTableBody">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Detail Modal for Threat Probes -->
+  <div class="probe-modal" id="probeModal" onclick="closeModal(event)">
+    <div class="glass-panel modal-card" id="modalCard" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeModalDirect()">&times;</button>
+      <div id="modalContent">
+        <!-- Populated on click -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="app-footer" id="appFooter">
+    <div>
+      <strong>Sealed-Round Arena (SRA)</strong> • Hackathon Submission v1.0
+    </div>
+    <div>
+      MIT Licensed • Targets: Qwen2.5-1.5B-Instruct & llama.cpp
+    </div>
+    <div>
+      <a href="https://github.com/avinashattri/sealed-round-arena" target="_blank" rel="noopener">GitHub Repository ↗</a>
+    </div>
+  </footer>
+
+  <!-- Data Bundle & Application Scripts -->
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
