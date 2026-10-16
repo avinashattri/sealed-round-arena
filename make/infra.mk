@@ -23,9 +23,10 @@ probes: ## Run probes (PROFILE=naive|hardened, ONLY=B1,B3,B4)
 
 .PHONY: clean
 clean: ## Tear down all containers, volumes, and repo-local secrets/shared dirs
-> docker compose --project-directory . -f infra/compose/naive.yml down -v --remove-orphans >/dev/null 2>&1 || true
-> docker compose --project-directory . -f infra/compose/hardened.yml down -v --remove-orphans >/dev/null 2>&1 || true
-> rm -rf secrets shared
+> @docker compose --project-directory . -f infra/compose/naive.yml --profile "*" down -v --remove-orphans >/dev/null 2>&1 || true
+> @docker compose --project-directory . -f infra/compose/hardened.yml --profile "*" down -v --remove-orphans >/dev/null 2>&1 || true
+> @for net in $$(docker network ls --filter name=sra- -q); do docker network rm $$net >/dev/null 2>&1 || true; done
+> @rm -rf secrets shared
 > @echo "Clean complete: stopped containers, removed volumes, removed secrets/ and shared/."
 
 .PHONY: hardened
