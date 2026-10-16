@@ -20,10 +20,10 @@ def test_load_attacks_sizes(tmp_path):
     assert mini[2][0] == "ch-0003"
 
     demo = load_attacks(attacks_file, size="demo")
-    assert len(demo) == 4  # 2 items * 2 repeats
+    assert len(demo) == 10  # 2 items * 5 repeats
 
     full = load_attacks(attacks_file, size="full")
-    assert len(full) == 12  # 2 items * 6 repeats
+    assert len(full) == 20  # 2 items * 10 repeats
 
 
 def test_load_benign_sizes():

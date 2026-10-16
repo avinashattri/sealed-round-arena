@@ -107,7 +107,7 @@ services:
 
   red:
     <<: *x-zone
-    image: sra/stub:dev
+    image: ${RED_IMAGE:-sra/red:dev}
     container_name: sra-hardened-red
     environment:
       - STUB_NAME=red

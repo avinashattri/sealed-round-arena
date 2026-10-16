@@ -37,6 +37,16 @@ def get_svc_audit_token() -> str:
     return read_secret("SVC_AUDIT_TOKEN", "/run/secrets/svc_audit", "secrets/token_svc_audit.txt")
 
 
+def get_svc_blue_token() -> str:
+    return read_secret("SVC_BLUE_TOKEN", "/run/secrets/svc_blue", "secrets/token_svc_blue.txt")
+
+
+def get_svc_oracle_token() -> str:
+    return read_secret(
+        "SVC_ORACLE_TOKEN", "/run/secrets/svc_oracle", "secrets/token_svc_oracle.txt"
+    )
+
+
 async def call_audit(audit_in: AuditIn) -> dict[str, Any]:
     token = get_svc_audit_token()
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
@@ -55,12 +65,14 @@ async def call_audit(audit_in: AuditIn) -> dict[str, Any]:
 
 
 async def call_blue_filter(route: str, req: FilterRequest) -> FilterVerdict:
+    token = get_svc_blue_token()
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     async with httpx.AsyncClient(timeout=10.0) as client:
         try:
             resp = await client.post(
                 f"{BLUE_URL}{route}",
                 content=req.model_dump_json(),
-                headers={"Content-Type": "application/json"},
+                headers=headers,
             )
             if resp.status_code == 200:
                 return FilterVerdict.model_validate(resp.json())
@@ -95,12 +107,14 @@ async def call_model(
 
 
 async def call_oracle(req: OracleRequest) -> OracleResult:
+    token = get_svc_oracle_token()
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     async with httpx.AsyncClient(timeout=10.0) as client:
         try:
             resp = await client.post(
                 f"{ORACLE_URL}/score",
                 content=req.model_dump_json(),
-                headers={"Content-Type": "application/json"},
+                headers=headers,
             )
             if resp.status_code == 200:
                 return OracleResult.model_validate(resp.json())

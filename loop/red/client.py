@@ -21,6 +21,7 @@ def get_token_red() -> str:
 
 def get_red_attacks() -> dict[str, str]:
     for p in [
+        "/tmp/red_attacks.json",
         "/run/secrets/red_attacks",
         "/run/secrets/red_attacks.json",
         "secrets/red_attacks.json",
@@ -35,7 +36,12 @@ def get_red_attacks() -> dict[str, str]:
 
 
 def get_red_meta() -> dict:
-    for p in ["/run/secrets/red_meta", "/run/secrets/red_meta.json", "secrets/red_meta.json"]:
+    for p in [
+        "/tmp/red_meta.json",
+        "/run/secrets/red_meta",
+        "/run/secrets/red_meta.json",
+        "secrets/red_meta.json",
+    ]:
         path = Path(p)
         if path.exists():
             try:

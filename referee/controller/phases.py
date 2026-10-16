@@ -29,6 +29,15 @@ def phase_0_provision(
     stub_model: bool,
 ) -> tuple[str, str, str, str]:
     """Phase 0: PROVISION - start containers, check pins, load round, emit campaign_created."""
+    import shutil
+
+    shutil.rmtree(Path("evidence/sealed") / round_id, ignore_errors=True)
+    shutil.rmtree(Path("evidence/revealed") / round_id, ignore_errors=True)
+    try:
+        dc("exec", "-T", "broker", "rm", "-rf", f"/sealed/{round_id}")
+    except (subprocess.CalledProcessError, RuntimeError, OSError):
+        pass
+
     env = os.environ.copy()
     blue_img = f"sra/blue:v{defense}"
     # Check if sra/blue:v<defense> exists, else fall back to sra/stub:dev
@@ -151,6 +160,8 @@ def phase_1_commit(
         "round_id": round_id,
     }
     (secrets_dir / "red_meta.json").write_text(json.dumps(meta_dict, indent=2))
+
+    # Secrets ready in secrets/ dir
 
     print(f"[1 COMMIT] OK: commitment={commitment_hex[:12]}... count={len(attack_pairs)}")
     return attack_pairs, nonce_hex, commitment_hex
@@ -340,15 +351,6 @@ def phase_5_reveal(
     revealed_dir = Path("evidence/revealed") / round_id
     revealed_dir.mkdir(parents=True, exist_ok=True)
 
-    unsealed_files: dict[str, bytes] = {}
-    if sealed_dir.exists():
-        for f in sorted(sealed_dir.glob("*.bin")):
-            raw_cipher = f.read_bytes()
-            plaintext = unseal(priv_hex, raw_cipher)
-            out_name = f.stem  # strip .bin
-            (revealed_dir / out_name).write_bytes(plaintext)
-            unsealed_files[f.name] = plaintext
-
     export_path = Path("evidence/audit_export.jsonl")
     entries: list[dict[str, Any]] = []
     if export_path.exists():
@@ -367,6 +369,23 @@ def phase_5_reveal(
             round_start_idx = idx
 
     current_entries = entries[round_start_idx:]
+    expected_files = {Path(e["sealed_ref"]).name for e in current_entries if e.get("sealed_ref")}
+
+    unsealed_files: dict[str, bytes] = {}
+    if sealed_dir.exists():
+        target_files = (
+            [sealed_dir / fname for fname in expected_files]
+            if expected_files
+            else sorted(sealed_dir.glob("*.bin"))
+        )
+        for f in target_files:
+            if not f.exists():
+                continue
+            raw_cipher = f.read_bytes()
+            plaintext = unseal(priv_hex, raw_cipher)
+            out_name = f.stem  # strip .bin
+            (revealed_dir / out_name).write_bytes(plaintext)
+            unsealed_files[f.name] = plaintext
 
     # Check each file's sha256 equals its logged content_hash
     for entry in current_entries:
@@ -382,18 +401,35 @@ def phase_5_reveal(
                     sys.exit(1)
 
     # Recompute commitment from request_received payloads actually sent
+    cid_to_req_file = {}
+    for entry in current_entries:
+        if entry.get("event") == "request_received" and entry.get("challenge_id"):
+            ref = entry.get("sealed_ref")
+            if ref:
+                cid_to_req_file[entry["challenge_id"]] = Path(ref).name
+
     actual_payloads = []
     mismatched = []
     for cid, orig_payload in attack_pairs:
-        fname = f"{cid}.request_received.1.bin"
+        fname = cid_to_req_file.get(cid, f"{cid}.request_received.1.bin")
         if fname in unsealed_files:
             actual_text = unsealed_files[fname].decode("utf-8")
             actual_payloads.append(actual_text)
             if actual_text != orig_payload:
                 mismatched.append(cid)
         else:
-            actual_payloads.append("")
-            mismatched.append(cid)
+            found = False
+            for ufname, ubytes in unsealed_files.items():
+                if ufname.startswith(f"{cid}.request_received."):
+                    actual_text = ubytes.decode("utf-8")
+                    actual_payloads.append(actual_text)
+                    if actual_text != orig_payload:
+                        mismatched.append(cid)
+                    found = True
+                    break
+            if not found:
+                actual_payloads.append("")
+                mismatched.append(cid)
 
     valid = check_commitment(actual_payloads, nonce_hex, commitment_hex)
     if not valid or mismatched:
@@ -453,11 +489,11 @@ def phase_6_results(
         cid_entries = by_cid.get(cid, [])
         label = "attack" if cid in attack_cids else "benign"
 
-        input_file = revealed_dir / f"{cid}.request_received.1"
-        input_text = input_file.read_text(errors="replace") if input_file.exists() else ""
+        input_files = sorted(revealed_dir.glob(f"{cid}.request_received.*"))
+        input_text = input_files[-1].read_text(errors="replace") if input_files else ""
 
-        output_file = revealed_dir / f"{cid}.delivered.1"
-        output_text = output_file.read_text(errors="replace") if output_file.exists() else ""
+        output_files = sorted(revealed_dir.glob(f"{cid}.delivered.*"))
+        output_text = output_files[-1].read_text(errors="replace") if output_files else ""
 
         path = [e.get("event") for e in cid_entries]
 

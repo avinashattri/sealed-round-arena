@@ -5,3 +5,7 @@ assets: ## Fetch and verify model and dataset assets
 .PHONY: model-smoke
 model-smoke: ## Run model smoke test
 > bash loop/model/smoke.sh
+
+.PHONY: loop
+loop: ## Run 3-round defense progression loop (SIZE=demo|full)
+> @.venv/bin/python -m loop.scoring.run --family F1 --size $(or $(SIZE),demo)

@@ -139,10 +139,10 @@ def load_attacks(path: str | Path, k: int = 1, size: str = "mini") -> list[tuple
             expanded.extend(raw_items)
         items = expanded[:target_count]
     elif size == "demo":
-        repeats = 2
+        repeats = 5
         items = raw_items * repeats
     else:  # full
-        repeats = 6
+        repeats = 10
         items = raw_items * repeats
 
     challenges = []

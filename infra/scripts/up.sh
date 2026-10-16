@@ -28,7 +28,7 @@ docker compose --project-directory . -f "$COMPOSE_FILE" up -d --wait --wait-time
 # Poll model health
 echo "Polling model health..."
 for i in {1..60}; do
-    if curl -sf http://127.0.0.1:8080/health >/dev/null 2>&1; then
+    if curl -sf http://127.0.0.1:8080/health >/dev/null 2>&1 || [ "$(docker inspect --format '{{.State.Health.Status}}' sra-hardened-model 2>/dev/null)" = "healthy" ] || [ "$(docker inspect --format '{{.State.Health.Status}}' sra-hardened-stubmodel 2>/dev/null)" = "healthy" ]; then
         echo "Model is healthy."
         break
     fi
