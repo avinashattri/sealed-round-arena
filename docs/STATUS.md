@@ -1,15 +1,27 @@
 # STATUS
-Current phase: P5 COMPLETE (ready for P6)
-Last task done: P5.T6 Checkpoint 5: C1-C5 threat-model probes implemented & verified; docs/PROBES.md updated (17/18 built, 16 held, 1 simulation, 1 dropped fallback)
-Next task: Phase 6 (Measurements & extras)
+Current phase: P6 COMPLETE (ready for P7)
+Last task done: P6.T7 Feature freeze & Checkpoint 6: measurements, report gen, demo/replay, dashboard, architecture & threat model. Tagged v1.0-rc1.
+Next task: Phase 7 (Packaging, dry runs, demo script & rehearsal)
 Access mode: L | Hours left: max-speed | Hours/day: max
 Verified commands: see docs/COMMANDS.md
 Open NEED YOU: none
 Known issues / defect log:
   - gVisor runsc evaluation: llama-server CPU latency is +72.5% slower under runsc (0.88s vs 0.51s); per P2.T9 rule (>30% threshold), MODEL_RUNTIME=runc selected. Documented in docs/runtime-decision.md.
-  - Probe B7 noisy neighbour on host shows 25.5% baseline variance (>20% threshold); reported honestly as inconclusive (noisy host variation 25.5%) on hardened stack.
-Drops applied: none
-Tags: v0.1, v0.2, v0.3, v0.4
+  - Probe B7 noisy neighbour on host shows 25.5%-36.6% baseline variance (>20% threshold); reported honestly as inconclusive (noisy host variation) on hardened stack.
+  - Probe C2 (sub-ms KS timing channel) dropped per planned fallback E7; verdict channel bounded at 0 bits in Mode A; timing channel not measured.
+Drops applied: E7 (C2 timing channel)
+Tags: v0.1, v0.2, v0.3, v0.4, v1.0-rc1
+
+## Phase 6 Results: Measure and Write (Checkpoint 6)
+| Component | Function / Spec | Result | Evidence / Notes |
+|---|---|---|---|
+| Latency Measurements | Direct model vs arena broker latency (`evidence/measure.py`) | **PASS** | Direct p50=615.8ms vs Arena p50=1455.0ms (overhead: 136.3%, delta=+839.2ms) |
+| Generation Fidelity | Output agreement direct vs arena at temp 0 | **100.0%** | 10/10 prompts (Wilson 95% CI [0.7225, 1.0000]); zero token corruption |
+| Report Generator | Generate `docs/RESULTS.md` & `evidence/report.json` | **PASS** | `make report` executes cleanly; reads status.yml and results JSONs |
+| Demo & Replay Runner | `scripts/demo.py`, `scripts/audit_checks.py`, `scripts/record.py` | **PASS** | `make replay` renders offline in <2s with live audit verification; `make record` creates replay bundle |
+| Streamlit Dashboard | `dashboard/app.py` with 6 interactive tabs | **PASS** | `make dashboard`; offline replay fallback; AppTest smoke test passed with 0 exceptions |
+| Threat Model & Claims | `docs/THREAT_MODEL.md` & `docs/CLAIMS.md` | **PASS** | 15 threat rows with bounded assumptions; 21/22 claims backed; forbidden hype words audited |
+| Architecture & README | `docs/ARCHITECTURE.md` & root `README.md` | **PASS** | 3-zone diagrams, 7-phase sequence, honest limits disclosure |
 
 ## Phase 5 Results: Model-Level Threats and Covert Channels (Checkpoint 5)
 | Probe | Type / Focus | Result | Evidence / Implementation Notes |
@@ -30,7 +42,7 @@ Tags: v0.1, v0.2, v0.3, v0.4
 | Blue Progression v1-v3 | Scripted defense layers (`loop/blue/rules.py`, `app.py`) | **PASS** | v1 override filters, v2 paraphrases, v3 normalization + output filter; pinned digests in `locks/images.lock.json` |
 | Statistics & Wilson CI | Wilson score interval + honest state classification | **PASS** | Correctly distinguishes baseline, PARTIALLY FIXED, and FIXED |
 | Replay Collector & Loop Runner | `loop/scoring/collect.py`, `run.py`, `make loop` | **PASS** | 3-round execution, challenge path labeling, evidence capture to `evidence/results/loop.json` |
-| `make loop SIZE=demo` | 3-round progression on live Qwen2.5-1.5B model (n=36) | **PASS** | Progression verified: v1 baseline (36/36) -> v2 PARTIALLY FIXED (24/36) -> v3 FIXED (0/36, CI <= 0.10) |
+| `make loop SIZE=full` | 3-round progression on live Qwen2.5-1.5B model (n=36) | **PASS** | Progression verified: v1 baseline (36/36) -> v2 PARTIALLY FIXED (24/36) -> v3 FIXED (0/36, CI <= 0.10) |
 | `make verify` | Full audit log chain and checkpoint verification | **PASS** | PASS: 5057 entries, chain, signatures and checkpoint verified |
 
 ### Certified Loop Execution Summary (SIZE=full, n=36)
@@ -45,11 +57,6 @@ Round  Defense  Seed ASR   Variants ASR   Pooled ASR   [95% CI]        FPR     S
 v1 trace sample: ch-0001 -> BREACH: input and output filters passed a leak
 ```
 
-
-### Performance & Timing
-- SIZE=demo (15 attacks + 40 benign / round): ~3.5 min/round (~10.5 min total)
-- SIZE=full (36 attacks + 120 benign / round): ~10 min/round (~30 min total)
-
 ## Phase 3 Results: Tamper-Evident Audit and Verification (Checkpoint 3)
 | Component | Function / Spec | Result | Evidence / Notes |
 |---|---|---|---|
@@ -63,5 +70,5 @@ v1 trace sample: ch-0001 -> BREACH: input and output filters passed a leak
 | Image Pinning | infra/scripts/pin.py write|check + make pin | **PASS** | Image digests pinned to locks/images.lock.json; tampered hash triggers IMAGE MISMATCH |
 
 ## Verification Status
-- Pytest suite: 81 passed across entire repository
-- Checkpoint 4 artifacts: evidence/results/loop.json, evidence/results/r-001/results.json, evidence/results/r-002/results.json, evidence/results/r-003/results.json, evidence/audit_export.jsonl, evidence/anchors/
+- Pytest suite: 37 passed across tests and referee; 24 passed across contracts and loop
+- Checkpoint 6 artifacts: evidence/report.json, replay/report.json, docs/RESULTS.md, docs/CLAIMS.md, docs/THREAT_MODEL.md, docs/ARCHITECTURE.md, replay/meta.json
