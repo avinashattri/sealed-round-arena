@@ -9,6 +9,7 @@ models/
 data/raw/
 evidence/*
 !evidence/.gitkeep
+!evidence/*.py
 *.db
 *.sqlite
 *.sqlite3

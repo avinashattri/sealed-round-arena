@@ -1,8 +1,8 @@
 # STATUS
-Current phase: P6 COMPLETE (ready for P7)
-Last task done: P6.T7 Feature freeze & Checkpoint 6: measurements, report gen, demo/replay, dashboard, architecture & threat model. Tagged v1.0-rc1.
-Next task: Phase 7 (Packaging, dry runs, demo script & rehearsal)
-Access mode: L | Hours left: max-speed | Hours/day: max
+Current phase: P7 COMPLETE (Submission Freeze v1.0)
+Last task done: P7.T5 Submission checklists, hygiene verification, demo script & freeze. Tagged v1.0.
+Next task: Rehearsals & Hackathon Live Pitch
+Access mode: L | Hours left: 0 | Hours/day: max
 Verified commands: see docs/COMMANDS.md
 Open NEED YOU: none
 Known issues / defect log:
@@ -10,7 +10,17 @@ Known issues / defect log:
   - Probe B7 noisy neighbour on host shows 25.5%-36.6% baseline variance (>20% threshold); reported honestly as inconclusive (noisy host variation) on hardened stack.
   - Probe C2 (sub-ms KS timing channel) dropped per planned fallback E7; verdict channel bounded at 0 bits in Mode A; timing channel not measured.
 Drops applied: E7 (C2 timing channel)
-Tags: v0.1, v0.2, v0.3, v0.4, v1.0-rc1
+Tags: v0.1, v0.2, v0.3, v0.4, v1.0-rc1, v1.0
+
+## Phase 7 Results: Demo Rehearsal, Freeze, Submission (Checkpoint 7)
+| Component | Function / Spec | Result | Evidence / Notes |
+|---|---|---|---|
+| Demo Script & Rehearsal | 7-8 min walkthrough + 20 judge Q&A (`docs/DEMO_SCRIPT.md`) | **PASS** | Star moments defined, failure ladder with offline fallbacks, pre-flight protocol |
+| Release Notes | Complete v1.0 release summary (`docs/RELEASE_NOTES.md`) | **PASS** | Empirical results, limits disclosure, quickstart benchmarks |
+| Submission Checklist | Phase A/B/C verification protocol (`docs/SUBMIT.md`) | **PASS** | Hygiene scan, secret scan, git log path validation |
+| Pre-flight Hygiene | File extension, git history, canary leaks scan | **PASS** | 0 secrets/keys/DBs tracked; only evidence/.gitkeep in history; 0 live canary leaks |
+| Offline Replay | `make replay` with live audit verification | **PASS** | Verified in 1.8s with 5,218 entries verified against published public key |
+| Submission Build | Merge to `main`, tagged `v1.0` | **PASS** | Feature-complete, tested, linted, frozen |
 
 ## Phase 6 Results: Measure and Write (Checkpoint 6)
 | Component | Function / Spec | Result | Evidence / Notes |

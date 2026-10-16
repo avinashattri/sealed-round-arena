@@ -19,6 +19,10 @@ An isolated, tamper-evident evaluation platform that benchmarks LLM red-teaming 
 
 ### Prerequisites & Host Machine
 - **Tested Environment:** Linux VM (Ubuntu 24.04 LTS, 4 CPU cores, 16 GB RAM).
+- **Verified Benchmark Timings:**
+  - `make setup`: ~35s (warm cache) / ~90s (fresh weights download)
+  - `make demo FAST=1`: ~3m 45s (live execution of 3 probes, loop round, tamper demo, commit-reveal check)
+  - `make replay`: 1.8s (instant offline demo & full 5,218-entry audit chain verification)
 - **Dependencies:** Docker Engine 24+, Python 3.10+, `git`, `curl`, `make`.
 
 ```bash
