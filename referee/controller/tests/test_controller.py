@@ -23,7 +23,7 @@ def test_load_attacks_sizes(tmp_path):
     assert len(demo) == 10  # 2 items * 5 repeats
 
     full = load_attacks(attacks_file, size="full")
-    assert len(full) == 20  # 2 items * 10 repeats
+    assert len(full) == 24  # 2 items * 12 repeats
 
 
 def test_load_benign_sizes():

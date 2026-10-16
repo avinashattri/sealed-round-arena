@@ -142,7 +142,7 @@ def load_attacks(path: str | Path, k: int = 1, size: str = "mini") -> list[tuple
         repeats = 5
         items = raw_items * repeats
     else:  # full
-        repeats = 10
+        repeats = 12
         items = raw_items * repeats
 
     challenges = []
