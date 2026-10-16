@@ -33,6 +33,10 @@ def phase_0_provision(
 
     shutil.rmtree(Path("evidence/sealed") / round_id, ignore_errors=True)
     shutil.rmtree(Path("evidence/revealed") / round_id, ignore_errors=True)
+    if not Path("secrets/token_svc_oracle.txt").exists():
+        subprocess.run(
+            [sys.executable, "scripts/make_canaries.py", "--profile", "hardened"], check=True
+        )
     try:
         dc("exec", "-T", "broker", "rm", "-rf", f"/sealed/{round_id}")
     except (subprocess.CalledProcessError, RuntimeError, OSError):
@@ -56,10 +60,12 @@ def phase_0_provision(
         if stub_model:
             compose_args.extend(["--profile", "stubmodel"])
         compose_args.extend(
-            ["up", "-d", "--force-recreate", "broker", "blue", "red", "oracle", "--wait"]
+            ["up", "-d", "--force-recreate", "audit", "broker", "blue", "red", "oracle", "--wait"]
         )
         if stub_model:
             compose_args.append("stubmodel")
+        else:
+            compose_args.append("model")
         dc(*compose_args, env=env)
 
     pin_check(stub_model=stub_model)

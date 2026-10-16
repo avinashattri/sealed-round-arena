@@ -67,7 +67,7 @@ def main():
     print(f"Red client starting: submitting {len(attacks)} attacks to {broker_url}...")
 
     for cid, payload in attacks.items():
-        time.sleep(random.uniform(0.0, 1.5))
+        time.sleep(random.uniform(0.0, 0.5))
         body = {
             "campaign_id": campaign_id,
             "round_id": round_id,
@@ -75,14 +75,26 @@ def main():
             "payload": payload,
             "max_tokens": 128,
         }
-        try:
-            resp = httpx.post(f"{broker_url}/submit", json=body, headers=headers, timeout=10.0)
-            if resp.status_code != 200:
-                print(f"Failed to submit {cid}: {resp.status_code} - {resp.text}", file=sys.stderr)
-            else:
-                print(f"Submitted {cid}: {resp.json().get('status')}")
-        except (httpx.HTTPError, OSError) as e:
-            print(f"Error submitting {cid}: {e}", file=sys.stderr)
+        submitted = False
+        for attempt in range(3):
+            try:
+                resp = httpx.post(f"{broker_url}/submit", json=body, headers=headers, timeout=120.0)
+                if resp.status_code == 200:
+                    print(f"Submitted {cid}: {resp.json().get('status')}")
+                    submitted = True
+                    break
+                else:
+                    print(
+                        f"Attempt {attempt + 1}: Failed to submit {cid}: {resp.status_code} - {resp.text}",
+                        file=sys.stderr,
+                    )
+                    time.sleep(1.0)
+            except (httpx.HTTPError, OSError) as e:
+                print(f"Attempt {attempt + 1}: Error submitting {cid}: {e}", file=sys.stderr)
+                time.sleep(1.0)
+        if not submitted:
+            print(f"FATAL: Could not submit challenge {cid} after 3 attempts", file=sys.stderr)
+            sys.exit(1)
 
     print("Red client completed submissions.")
 
