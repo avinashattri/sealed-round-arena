@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, Header, HTTPException, Request, Response
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
 from contracts.audit import AuditIn
@@ -22,6 +24,12 @@ except ModuleNotFoundError:
     from broker.state import manager
 
 app = FastAPI(title="Sealed Round Arena - Broker")
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(status_code=422, content={"error": "bad request"})
+
 
 MAX_BODY_SIZE = 16 * 1024  # 16 KB
 
@@ -91,7 +99,7 @@ async def submit(request: Request, authorization: str | None = Header(None)):
         data = json.loads(body.decode("utf-8"))
         req = Submit.model_validate(data)
     except (json.JSONDecodeError, ValidationError, UnicodeDecodeError):
-        raise HTTPException(status_code=422, detail="Unprocessable Entity")
+        return JSONResponse(status_code=422, content={"error": "bad request"})
 
     # 5. Campaign match check (A2 probe)
     if req.campaign_id != token_campaign:

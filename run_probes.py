@@ -133,7 +133,7 @@ def main():
     )
     args = parser.parse_args()
 
-    all_keys = list(PROBE_CONFIG.keys()) + ["B7"]
+    all_keys = list(PROBE_CONFIG.keys()) + ["B7", "C1", "C3", "C4", "C5"]
     probes_to_run = all_keys
     if args.only:
         filter_ids = [p.strip().upper() for p in args.only.split(",") if p.strip()]
@@ -182,6 +182,46 @@ def main():
                     f"{b7_result['probe']:<4}  {b7_result['verdict']:<5}  {b7_result['evidence']}"
                 )
                 results.append(b7_result)
+                continue
+
+            if probe_id == "C1":
+                from loop.probes.c1_covert import run_probe as c1_run
+
+                res_c1 = c1_run()
+                verdict = "HELD" if res_c1["passed"] else "LEAK"
+                evidence = res_c1["evidence"]
+                print(f"{probe_id:<4}  {verdict:<5}  {evidence}")
+                results.append({"probe": probe_id, "verdict": verdict, "evidence": evidence})
+                continue
+
+            if probe_id == "C3":
+                from loop.probes.c3_cache import run_probe as c3_run
+
+                res_c3 = c3_run()
+                verdict = "HELD" if res_c3["passed"] else "LEAK"
+                evidence = res_c3["evidence"]
+                print(f"{probe_id:<4}  {verdict:<5}  {evidence}")
+                results.append({"probe": probe_id, "verdict": verdict, "evidence": evidence})
+                continue
+
+            if probe_id == "C4":
+                from loop.probes.c4_cross_campaign import run_probe as c4_run
+
+                res_c4 = c4_run()
+                verdict = "HELD" if res_c4["passed"] else "LEAK"
+                evidence = res_c4["evidence"]
+                print(f"{probe_id:<4}  {verdict:<5}  {evidence}")
+                results.append({"probe": probe_id, "verdict": verdict, "evidence": evidence})
+                continue
+
+            if probe_id == "C5":
+                from loop.probes.c5_residue import run_probe as c5_run
+
+                res_c5 = c5_run()
+                verdict = "HELD" if res_c5["passed"] else "LEAK"
+                evidence = res_c5["evidence"]
+                print(f"{probe_id:<4}  {verdict:<5}  {evidence}")
+                results.append({"probe": probe_id, "verdict": verdict, "evidence": evidence})
                 continue
 
             cfg = PROBE_CONFIG[probe_id]

@@ -1,7 +1,7 @@
 # STATUS
-Current phase: P4 COMPLETE (ready for P5)
-Last task done: P4.T7 Checkpoint 4 full-size run (SIZE=full, n=36), v3 certified FIXED, make verify PASS (5057 entries), tag v0.4
-Next task: Phase 5 (The dashboard)
+Current phase: P5 COMPLETE (ready for P6)
+Last task done: P5.T6 Checkpoint 5: C1-C5 threat-model probes implemented & verified; docs/PROBES.md updated (17/18 built, 16 held, 1 simulation, 1 dropped fallback)
+Next task: Phase 6 (Measurements & extras)
 Access mode: L | Hours left: max-speed | Hours/day: max
 Verified commands: see docs/COMMANDS.md
 Open NEED YOU: none
@@ -10,6 +10,16 @@ Known issues / defect log:
   - Probe B7 noisy neighbour on host shows 25.5% baseline variance (>20% threshold); reported honestly as inconclusive (noisy host variation 25.5%) on hardened stack.
 Drops applied: none
 Tags: v0.1, v0.2, v0.3, v0.4
+
+## Phase 5 Results: Model-Level Threats and Covert Channels (Checkpoint 5)
+| Probe | Type / Focus | Result | Evidence / Implementation Notes |
+|:---:|:---|:---:|:---|
+| **C1** | Covert fields & constant receipt | **HELD** | `loop/probes/c1_covert.py`: 200 response strictly `{"challenge_id":..., "status":"accepted"}`; 422 errors never echo input (`{"error":"bad request"}`); 0 bits covert channel across 3 live rounds |
+| **C4** | Cross-campaign canary isolation | **HELD** | `loop/probes/c4_cross_campaign.py`: Naive deployment leaked previous session canary from history; hardened arena isolates model state (0/5 leaks across campaigns) |
+| **C5** | Residue after reset/clean | **HELD** | `infra/probes/c5_residue.sh` & `loop/probes/c5_residue.py`: `make clean` asserts 0 containers, 0 volumes, 0 networks, empty secrets/shared dirs, 0 canary residue in /tmp or ~/.cache |
+| **C3** | Prefix-cache timing channel | **HELD** | `loop/probes/c3_cache.py`: Demonstrated at engine level (twin -> llama-server, cache on vs off: 51.9x ratio, p=0.00397). The broker forces cache_prompt:false (unit test). Production route: per-tenant cache salt (vLLM cache_salt). |
+| **C2** | Sub-millisecond timing channel (KS) | **NOT BUILT** | Dropped per planned fallback E7; 0 bits of verdict in Mode A; timing channel not measured |
+| **Summary** | All 18 Threat Probes | **17/18 BUILT** | 16 HELD, 1 SIMULATION (B2 metadata), 1 NOT BUILT (C2 timing). Documented in `docs/PROBES.md`. |
 
 ## Phase 4 Results: The Loop (Checkpoint 4)
 | Component | Function / Spec | Result | Evidence / Notes |
